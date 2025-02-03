@@ -153,9 +153,4 @@ Keshpay is a stablecoin social payment solution for friends, creators, traveller
 
 ---
 
-### **Key Features to Highlight**
-- **Stablecoin Focus:** Emphasize the use of stablecoins for low volatility and fast transactions.
-- **Security:** Highlight KYC, wallet backups, and biometric authentication.
-- **Simplicity:** Ensure the app is as intuitive as Venmo, with clear calls to action and minimal friction.
-
-This user flow ensures a seamless experience for users, from onboarding to making their first stablecoin transaction and beyond.
+Some of the features here will not be released with the MVP, example Settings and Security, Profile settings, Currency conversion, Help and support.
