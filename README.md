@@ -1,97 +1,156 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Keshpay
+Stablecoin-Powered Payment App 
+---
+## Problem
+Keshpay is a stablecoin social payment solution for friends, creators, travellers and digital nomads.
 
-# Getting Started
+---
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+### **1. Onboarding**
+- **1.1. Welcome Screen**
+  - App displays a welcome message: "Send and receive money instantly with Keshpay."
+  - Buttons: "Sign Up" or "Log In."
+  
+- **1.2. Sign Up**
+  - User enters:
+    - Email address or phone number.
+    - Creates a password.
+  - User agrees to terms of service and privacy policy.
+  - Optional: Enable biometric authentication (fingerprint or face ID).
 
-## Step 1: Start Metro
+- **1.3. Identity Verification (KYC)**
+  - User uploads:
+    - Government-issued ID (e.g., passport, driver’s license).
+    - Selfie for facial recognition.
+  - App verifies identity in real-time or within a few minutes.
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- **1.4. Set Up Wallet**
+  - App generates a crypto wallet for the user.
+  - User is prompted to back up their wallet with a recovery phrase.
+  - User sets a PIN for additional security.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+- **1.5. Add Payment Method**
+  - User links a bank account, debit card, or credit card to fund their Keshpay wallet.
+  - User can also deposit stablecoins directly into their wallet using their crypto address.
 
-```sh
-# Using npm
-npm start
+---
 
-# OR using Yarn
-yarn start
-```
+### **2. Home Screen**
+- **2.1. Dashboard**
+  - Displays:
+    - Wallet balance in stablecoins (e.g., USDC, USDT).
+    - Recent transactions.
+    - Quick action buttons: "Send," "Request," "Scan QR Code."
 
-## Step 2: Build and run your app
+- **2.2. Notifications**
+  - Alerts for successful transactions, received payments, or security updates.
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+---
 
-### Android
+### **3. Sending Stablecoins**
+- **3.1. Initiate Send**
+  - User taps "Send" on the home screen.
+  - User selects a recipient:
+    - From contacts.
+    - By entering a phone number, email, or crypto wallet address.
+    - By scanning a QR code.
 
-```sh
-# Using npm
-npm run android
+- **3.2. Enter Amount**
+  - User enters the amount in stablecoins or fiat equivalent.
+  - App shows the transaction fee (if any) and estimated processing time.
 
-# OR using Yarn
-yarn android
-```
+- **3.3. Add Note**
+  - User can add a note (e.g., "For dinner" or "Rent payment").
 
-### iOS
+- **3.4. Confirm Transaction**
+  - User reviews details and confirms the transaction.
+  - App prompts for PIN or biometric authentication.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+- **3.5. Transaction Complete**
+  - App displays a confirmation screen with transaction details.
+  - Recipient receives a notification.
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+---
 
-```sh
-bundle install
-```
+### **4. Requesting Stablecoins**
+- **4.1. Initiate Request**
+  - User taps "Request" on the home screen.
+  - User selects a contact or enters a phone number/email.
 
-Then, and every time you update your native dependencies, run:
+- **4.2. Enter Amount**
+  - User specifies the amount in stablecoins or fiat equivalent.
 
-```sh
-bundle exec pod install
-```
+- **4.3. Add Note**
+  - User can add a note (e.g., "For concert tickets").
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+- **4.4. Send Request**
+  - Recipient receives a notification to fulfill the request.
 
-```sh
-# Using npm
-npm run ios
+---
 
-# OR using Yarn
-yarn ios
-```
+### **5. Receiving Stablecoins**
+- **5.1. Notification**
+  - User receives a notification about incoming stablecoins.
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+- **5.2. Accept Payment**
+  - If required, user confirms receipt of funds.
+  - Funds are added to the user’s wallet balance.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+---
 
-## Step 3: Modify your app
+### **6. Transaction History**
+- **6.1. View Transactions**
+  - User taps "History" to see a list of all transactions.
+  - Transactions are categorized (e.g., sent, received, pending).
 
-Now that you have successfully run the app, let's make changes!
+- **6.2. Filter and Search**
+  - User can filter by date, amount, or type of transaction.
+  - Search bar to find specific transactions.
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+---
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+### **7. Wallet Management**
+- **7.1. Add Funds**
+  - User can add stablecoins by:
+    - Depositing from a linked bank account or card.
+    - Receiving from another crypto wallet.
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- **7.2. Withdraw Funds**
+  - User can withdraw stablecoins to:
+    - A linked bank account.
+    - An external crypto wallet.
 
-## Congratulations! :tada:
+- **7.3. Currency Conversion**
+  - User can convert stablecoins to other cryptocurrencies or fiat (if supported).
 
-You've successfully run and modified your React Native App. :partying_face:
+---
 
-### Now what?
+### **8. Security and Settings**
+- **8.1. Security Settings**
+  - User can:
+    - Enable two-factor authentication (2FA).
+    - Change PIN or biometric settings.
+    - View and manage connected devices.
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+- **8.2. Profile Settings**
+  - User can update:
+    - Personal information.
+    - Contact details.
+    - Notification preferences.
 
-# Troubleshooting
+- **8.3. Help and Support**
+  - Access FAQs, contact support, or report an issue.
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+---
 
-# Learn More
+### **9. Last Actions**
+- **9.1. Log Out**
+  - User logs out securely.
+  - App prompts to confirm logout and reminds the user to back up their wallet.
 
-To learn more about React Native, take a look at the following resources:
+- **9.2. Delete Account**
+  - User can delete their account (after confirming identity and transferring remaining funds).
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+---
+
+Some of the features here will not be released with the MVP, example Settings and Security, Profile settings, Currency conversion, Help and support.
