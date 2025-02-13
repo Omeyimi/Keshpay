@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.20;
 
-
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -18,6 +17,7 @@ contract Payments {
     ////////////////
     // Error codes//
     ////////////////
+
     error Payments__WalletNotInitialized();
     error Payments__InsufficientBalance();
     error Payments__WalletAlreadyInitialized();
@@ -66,14 +66,11 @@ contract Payments {
 
     address public immutable i_owner;
 
-    constructor(
-        address[] memory _stablecoins,
-        address[] memory _priceFeeds
-    ) {
+    constructor(address[] memory _stablecoins, address[] memory _priceFeeds) {
         i_owner = msg.sender;
         if (_stablecoins.length != _priceFeeds.length) revert Payments__ArrayLengthMismatch();
         if (_stablecoins.length == 0) revert Payments__NoStablecoinsProvided();
-        
+
         for (uint256 i = 0; i < _stablecoins.length; i++) {
             supportedStablecoins[_stablecoins[i]] = true;
             tokenPriceFeeds[_stablecoins[i]] = _priceFeeds[i];
@@ -104,42 +101,42 @@ contract Payments {
     }
 
     /**
-     * @notice Deposit tokens into the wallet
-     * @param _token The address of the token to deposit
-     * @param _amount The amount of tokens to deposit
+     * @notice Deposit stablecoins into the wallet
+     * @param _token The address of the stablecoin to deposit
+     * @param _amount The amount of stablecoins to deposit
      */
     function deposit(address _token, uint256 _amount) external initializedWallet(msg.sender) {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (!supportedStablecoins[_token]) revert Payments__UnsupportedStablecoin();
-        
+
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         if (_amount > balance) revert Payments__InsufficientBalance();
-        
+
         wallets[msg.sender].balances[_token] += _amount;
         IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         emit Deposited(_token, msg.sender, _amount);
     }
 
     /**
-     * @notice Withdraw tokens from the wallet
-     * @param _token The address of the token to withdraw
-     * @param _amount The amount of tokens to withdraw
+     * @notice Withdraw stablecoins from the wallet
+     * @param _token The address of the stablecoin to withdraw
+     * @param _amount The amount of stablecoins to withdraw
      */
     function withdraw(address _token, uint256 _amount) external initializedWallet(msg.sender) {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (wallets[msg.sender].balances[_token] < _amount) revert Payments__InsufficientBalance();
-        
+
         wallets[msg.sender].balances[_token] -= _amount;
         IERC20(_token).safeTransfer(msg.sender, _amount);
         emit Withdrawn(_token, msg.sender, _amount);
     }
 
     /**
-     * @notice Get the balance of a token in the wallet
-     * @param _token The address of the token to get the balance of
-     * @return The balance of the token in the wallet
+     * @notice Get the balance of a stablecoin in the wallet
+     * @param _token The address of the stablecoin to get the balance of
+     * @return The balance of the stablecoin in the wallet
      */
     function getBalance(address _token) external view returns (uint256) {
         return wallets[msg.sender].balances[_token];
