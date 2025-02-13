@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 // Core imports needed
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Payments
@@ -15,6 +16,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Payments {
     error Payments__WalletNotInitialized();
     error Payments__InsufficientBalance();
+    error Payments__WalletAlreadyInitialized();
+    error Payments__UnauthorizedAccess();
+    error Payments__InvalidAmount();
+    error Payments__TransferFailed();
+    error Payments__InvalidAddress();
 
     struct Transaction {
         uint256 id;
@@ -39,9 +45,12 @@ contract Payments {
 
     mapping(address => userWallet) public wallets;
 
+    using SafeERC20 for IERC20;
+
     event Deposited(address token, address user, uint256 amount);
     event Withdrawn(address token, address user, uint256 amount);
     event TransactionCreated(address sender, address to, uint256 amount, string note);
+    event WalletInitialized(address indexed wallet, address indexed owner);
 
     constructor(address _priceFeeds) {
         priceFeeds = _priceFeeds;
@@ -58,9 +67,11 @@ contract Payments {
      * @param _wallet The address of the wallet to initialize
      * @notice Wallet can contain multiple tokens - USDC, ETH, BTC and uses Chainlink price feeds to convert to USD
      */
-    function initializeWallet(address _wallet) external initializedWallet(_wallet) {
+    function initializeWallet(address _wallet) external {
+        if (wallets[_wallet].initialized) revert Payments__WalletAlreadyInitialized();
         wallets[_wallet].owner = msg.sender;
         wallets[_wallet].initialized = true;
+        emit WalletInitialized(_wallet, msg.sender);
     }
 
     /**
@@ -68,11 +79,15 @@ contract Payments {
      * @param _token The address of the token to deposit
      * @param _amount The amount of tokens to deposit
      */
-    function deposit(address _token, uint256 _amount) external initializedWallet(_token) {
+    function deposit(address _token, uint256 _amount) external initializedWallet(msg.sender) {
+        if (_token == address(0)) revert Payments__InvalidAddress();
+        if (_amount == 0) revert Payments__InvalidAmount();
+        
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         if (_amount > balance) revert Payments__InsufficientBalance();
+        
         wallets[msg.sender].balances[_token] += _amount;
-        IERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        IERC20(_token).safeTransferFrom(msg.sender, address(this), _amount);
         emit Deposited(_token, msg.sender, _amount);
     }
 
@@ -81,10 +96,13 @@ contract Payments {
      * @param _token The address of the token to withdraw
      * @param _amount The amount of tokens to withdraw
      */
-    function withdraw(address _token, uint256 _amount) external {
+    function withdraw(address _token, uint256 _amount) external initializedWallet(msg.sender) {
+        if (_token == address(0)) revert Payments__InvalidAddress();
+        if (_amount == 0) revert Payments__InvalidAmount();
         if (wallets[msg.sender].balances[_token] < _amount) revert Payments__InsufficientBalance();
+        
         wallets[msg.sender].balances[_token] -= _amount;
-        IERC20(_token).transfer(msg.sender, _amount);
+        IERC20(_token).safeTransfer(msg.sender, _amount);
         emit Withdrawn(_token, msg.sender, _amount);
     }
 
