@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.20;
 
-// Core imports needed
+
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,14 +14,22 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
  * @dev This contract is designed to be used with the Chainlink Price Feeds contract
  */
 contract Payments {
+    using SafeERC20 for IERC20;
+    ////////////////
+    // Error codes//
+    ////////////////
     error Payments__WalletNotInitialized();
     error Payments__InsufficientBalance();
     error Payments__WalletAlreadyInitialized();
-    error Payments__UnauthorizedAccess();
     error Payments__InvalidAmount();
-    error Payments__TransferFailed();
     error Payments__InvalidAddress();
+    error Payments__UnsupportedStablecoin();
+    error Payments__ArrayLengthMismatch();
+    error Payments__NoStablecoinsProvided();
 
+    ////////////////
+    // Structs    //
+    ////////////////
     struct Transaction {
         uint256 id;
         uint256 amount;
@@ -32,8 +40,6 @@ contract Payments {
         bool completed;
     }
 
-    mapping(address => Transaction[]) public transactions;
-
     struct userWallet {
         address owner;
         uint256 balance;
@@ -41,31 +47,54 @@ contract Payments {
         mapping(address => uint256) balances;
     }
 
-    address public priceFeeds;
-
+    ////////////////
+    // Mappings   //
+    ////////////////
+    mapping(address => Transaction[]) public transactions;
     mapping(address => userWallet) public wallets;
+    // Supported stablecoins mapping
+    mapping(address => bool) private supportedStablecoins;
+    mapping(address => address) public tokenPriceFeeds;
 
-    using SafeERC20 for IERC20;
-
+    ////////////////
+    // Events     //
+    ////////////////
     event Deposited(address token, address user, uint256 amount);
     event Withdrawn(address token, address user, uint256 amount);
     event TransactionCreated(address sender, address to, uint256 amount, string note);
     event WalletInitialized(address indexed wallet, address indexed owner);
 
-    constructor(address _priceFeeds) {
-        priceFeeds = _priceFeeds;
+    address public immutable i_owner;
+
+    constructor(
+        address[] memory _stablecoins,
+        address[] memory _priceFeeds
+    ) {
+        i_owner = msg.sender;
+        if (_stablecoins.length != _priceFeeds.length) revert Payments__ArrayLengthMismatch();
+        if (_stablecoins.length == 0) revert Payments__NoStablecoinsProvided();
+        
+        for (uint256 i = 0; i < _stablecoins.length; i++) {
+            supportedStablecoins[_stablecoins[i]] = true;
+            tokenPriceFeeds[_stablecoins[i]] = _priceFeeds[i];
+        }
     }
 
+    ////////////////
+    // Modifiers  //
+    ////////////////
     modifier initializedWallet(address _wallet) {
         if (!wallets[_wallet].initialized) revert Payments__WalletNotInitialized();
         _;
     }
 
-    // Core functions
+    /////////////////////////
+    // External Functions //
+    /////////////////////////
     /**
      * @notice Initialize a wallet for a user
      * @param _wallet The address of the wallet to initialize
-     * @notice Wallet can contain multiple tokens - USDC, ETH, BTC and uses Chainlink price feeds to convert to USD
+     * @notice Wallet can contain stablecoins (USDC, USDT, DAI)
      */
     function initializeWallet(address _wallet) external {
         if (wallets[_wallet].initialized) revert Payments__WalletAlreadyInitialized();
@@ -82,6 +111,7 @@ contract Payments {
     function deposit(address _token, uint256 _amount) external initializedWallet(msg.sender) {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
+        if (!supportedStablecoins[_token]) revert Payments__UnsupportedStablecoin();
         
         uint256 balance = IERC20(_token).balanceOf(msg.sender);
         if (_amount > balance) revert Payments__InsufficientBalance();
@@ -144,11 +174,9 @@ contract Payments {
 
     function getTransactionDetails(uint256 transactionId) external view returns (Transaction[] memory) {}
 
-    function latestRoundData()
-        external
-        view
-        returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
-    {
-        return AggregatorV3Interface(priceFeeds).latestRoundData();
+    function getTokenPrice(address _token) public view returns (uint256) {
+        address priceFeed = tokenPriceFeeds[_token];
+        (, int256 price,,,) = AggregatorV3Interface(priceFeed).latestRoundData();
+        return uint256(price);
     }
 }
