@@ -17,6 +17,10 @@ contract PaymentsTest is Test {
 
     uint256 public constant DEPOSIT_AMOUNT = 100 ether;
 
+    function encodeTransaction(Payments.Transaction memory transaction) public pure returns (bytes32) {
+        return keccak256(abi.encode(transaction.id, transaction.sender, transaction.receiver, transaction.token, transaction.amount, transaction.note, transaction.completed));
+    }
+
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
         address[] memory stablecoins = new address[](1);
@@ -79,6 +83,92 @@ contract PaymentsTest is Test {
 
         vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
         payments.deposit(address(0x2), DEPOSIT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testSendPayment() public {
+        vm.startPrank(user1);
+        payments.initializeWallet(user1);
+        usdc.mint(user1, DEPOSIT_AMOUNT);
+        usdc.approve(address(payments), DEPOSIT_AMOUNT);
+        payments.deposit(address(usdc), DEPOSIT_AMOUNT);
+
+        payments.sendPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
+        assertEq(usdc.balanceOf(address(payments)), 0);
+        assertEq(payments.getBalance(address(usdc)), 0);
+        assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
+        Payments.Transaction memory expected = Payments.Transaction({
+                id: 0,
+                token: address(usdc),
+                amount: DEPOSIT_AMOUNT,
+                timestamp: block.timestamp,
+                sender: user1,
+                receiver: user2,
+                note: "test",
+                completed: true
+            });
+        Payments.Transaction memory result = payments.getTransactionDetails(user1, 0);
+        assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.stopPrank();
+    }
+    /*
+    assertEq(expected.id, result.id);
+        assertEq(expected.token, result.token);
+        assertEq(expected.sender, result.sender);
+        assertEq(expected.receiver, result.receiver);
+        assertEq(expected.amount, result.amount);
+        assertEq(expected.note, result.note);
+        assertEq(expected.completed, result.completed);
+        */
+
+    function testRequestPayment() public {
+        vm.startPrank(user1);
+
+        payments.requestPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
+        Payments.Transaction memory expected = Payments.Transaction({
+                id: 0,
+                token: address(usdc),
+                amount: DEPOSIT_AMOUNT,
+                timestamp: block.timestamp,
+                sender: user2,
+                receiver: user1,
+                note: "test",
+                completed: false
+            });
+        Payments.Transaction memory result = payments.getTransactionDetails(user2, 0);
+        assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.stopPrank();
+    }
+
+    function testFulfillPayment() public {
+        vm.startPrank(user1);
+        payments.initializeWallet(user1);
+        usdc.mint(user1, DEPOSIT_AMOUNT);
+        usdc.approve(address(payments), DEPOSIT_AMOUNT);
+        payments.deposit(address(usdc), DEPOSIT_AMOUNT);
+
+        vm.startPrank(user2);
+        payments.initializeWallet(user2);
+
+        payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        vm.startPrank(user1);
+        payments.fulfillPayment(0);
+
+        assertEq(usdc.balanceOf(address(payments)), 0);
+        assertEq(payments.getBalance(address(usdc)), 0);
+        assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
+        Payments.Transaction memory expected = Payments.Transaction({
+                id: 0,
+                token: address(usdc),
+                amount: DEPOSIT_AMOUNT,
+                timestamp: block.timestamp,
+                sender: user1,
+                receiver: user2,
+                note: "test",
+                completed: true
+            });
+        Payments.Transaction memory result = payments.getTransactionDetails(user1, 0);
+        assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }
 }
