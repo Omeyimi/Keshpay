@@ -39,7 +39,7 @@ contract PaymentsTest is Test {
 
         payments = new Payments(address(networkConfig));
 
-        vm.startPrank(payments.i_owner());
+        vm.startPrank(payments.owner());
         address[] memory stablecoins = new address[](1);
         stablecoins[0] = address(usdc);
         address[] memory priceFeeds = new address[](1);
@@ -156,7 +156,7 @@ contract PaymentsTest is Test {
         assertEq(payments.getBalance(address(usdc)), 0);
         assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
         Payments.Transaction memory expected = Payments.Transaction({
-            id: 0,
+            id: 1,
             token: address(usdc),
             amount: DEPOSIT_AMOUNT,
             timestamp: block.timestamp,
@@ -165,7 +165,7 @@ contract PaymentsTest is Test {
             note: "test",
             completed: true
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user1, 0);
+        Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }
@@ -196,7 +196,7 @@ contract PaymentsTest is Test {
 
         payments.requestPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         Payments.Transaction memory expected = Payments.Transaction({
-            id: 0,
+            id: 1,
             token: address(usdc),
             amount: DEPOSIT_AMOUNT,
             timestamp: block.timestamp,
@@ -205,7 +205,7 @@ contract PaymentsTest is Test {
             note: "test",
             completed: false
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user2, 0);
+        Payments.Transaction memory result = payments.getTransactionDetails(user2, 1);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }
@@ -265,7 +265,7 @@ contract PaymentsTest is Test {
         assertEq(payments.getBalance(address(usdc)), 0);
         assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
         Payments.Transaction memory expected = Payments.Transaction({
-            id: 0,
+            id: 1,
             token: address(usdc),
             amount: DEPOSIT_AMOUNT,
             timestamp: block.timestamp,
@@ -274,7 +274,7 @@ contract PaymentsTest is Test {
             note: "test",
             completed: true
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user1, 0);
+        Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }

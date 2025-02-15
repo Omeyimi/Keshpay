@@ -5,6 +5,8 @@ pragma solidity ^0.8.20;
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
 
 /**
@@ -13,7 +15,7 @@ import {NetworkConfig} from "../script/NetworkConfig.s.sol";
  * @notice A simple payment system that allows users to deposit and withdraw tokens, and send and request payments
  * @dev This contract is designed to be used with the Chainlink Price Feeds contract
  */
-contract Payments {
+contract Payments is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     ////////////////
     // Error codes//
@@ -32,6 +34,7 @@ contract Payments {
     error Payments__StalePrice();
     error Payments__InvalidPrice();
     error Payments__Unauthorized();
+    error Payments__NoTransactions();
 
     ////////////////
     // Structs    //
@@ -54,8 +57,8 @@ contract Payments {
         mapping(address => uint256) balances;
     }
 
-    address public immutable i_owner;
     NetworkConfig public immutable i_networkConfig;
+    uint256 private s_transactionCounter;
 
     ////////////////
     // Mappings   //
@@ -79,9 +82,9 @@ contract Payments {
      * @notice Constructor for the Payments contract
      * @param _networkConfig The address of the NetworkConfig contract
      */
-    constructor(address _networkConfig) {
-        i_owner = msg.sender;
+    constructor(address _networkConfig) Ownable(msg.sender) {
         i_networkConfig = NetworkConfig(_networkConfig);
+        s_transactionCounter = 0;
 
         // Get network addresses
         NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
@@ -154,7 +157,7 @@ contract Payments {
      * @param _token The address of the stablecoin to withdraw
      * @param _amount The amount of stablecoins to withdraw
      */
-    function withdraw(address _token, uint256 _amount) external initializedWallet(msg.sender) {
+    function withdraw(address _token, uint256 _amount) external nonReentrant initializedWallet(msg.sender) {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (wallets[msg.sender].balances[_token] < _amount) revert Payments__InsufficientBalance();
@@ -248,9 +251,11 @@ contract Payments {
         internal
     {
         Transaction[] storage userTransactions = transactions[sender];
+        s_transactionCounter++;
+
         userTransactions.push(
             Transaction({
-                id: userTransactions.length,
+                id: s_transactionCounter,
                 token: token,
                 amount: amount,
                 timestamp: block.timestamp,
@@ -260,7 +265,6 @@ contract Payments {
                 completed: false
             })
         );
-
         emit TransactionCreated(sender, to, token, amount, note);
     }
 
@@ -269,7 +273,14 @@ contract Payments {
     }
 
     function getTransactionDetails(address user, uint256 transactionId) external view returns (Transaction memory) {
-        return transactions[user][transactionId];
+        Transaction[] storage userTransactions = transactions[user];
+
+        for (uint256 i = 0; i < userTransactions.length; i++) {
+            if (userTransactions[i].id == transactionId) {
+                return userTransactions[i];
+            }
+        }
+        revert Payments__InvalidTransactionId();
     }
 
     function getTokenPrice(address _token) public view returns (uint256) {
@@ -289,8 +300,16 @@ contract Payments {
     }
 
     function addSupportedStablecoin(address _token, address _priceFeed) external {
-        if (msg.sender != i_owner) revert Payments__Unauthorized();
+        if (msg.sender != owner()) revert Payments__Unauthorized();
         supportedStablecoins[_token] = true;
         tokenPriceFeeds[_token] = _priceFeed;
+    }
+
+    function emergencyWithdraw(address _token) external onlyOwner {
+        IERC20(_token).safeTransfer(owner(), IERC20(_token).balanceOf(address(this)));
+    }
+
+    receive() external payable {
+        revert("Ether payments are not supported");
     }
 }
