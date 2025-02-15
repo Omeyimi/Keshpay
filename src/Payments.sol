@@ -53,7 +53,7 @@ contract Payments {
         bool initialized;
         mapping(address => uint256) balances;
     }
-    
+
     address public immutable i_owner;
     NetworkConfig public immutable i_networkConfig;
 
@@ -82,7 +82,7 @@ contract Payments {
     constructor(address _networkConfig) {
         i_owner = msg.sender;
         i_networkConfig = NetworkConfig(_networkConfig);
-        
+
         // Get network addresses
         NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
 
@@ -268,26 +268,22 @@ contract Payments {
         return transactions[user];
     }
 
-    function getTransactionDetails(uint256 transactionId) external view returns (Transaction memory) {
-        return transactions[msg.sender][transactionId];
+    function getTransactionDetails(address user, uint256 transactionId) external view returns (Transaction memory) {
+        return transactions[user][transactionId];
     }
 
     function getTokenPrice(address _token) public view returns (uint256) {
         address priceFeed = tokenPriceFeeds[_token];
         if (priceFeed == address(0)) revert Payments__UnsupportedStablecoin();
-        
-        (
-            uint80 roundId,
-            int256 price,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
+
+        ( /* uint80 roundId */
+            , int256 price, /* uint256 startedAt */, uint256 updatedAt, /* uint80 answeredInRound */
         ) = AggregatorV3Interface(priceFeed).latestRoundData();
-        
+
         // Check for stale data
         if (updatedAt == 0 || updatedAt > block.timestamp) revert Payments__StalePrice();
         if (price <= 0) revert Payments__InvalidPrice();
-        
+
         // Chainlink price feeds for USD pairs return prices with 8 decimals
         return uint256(price);
     }
