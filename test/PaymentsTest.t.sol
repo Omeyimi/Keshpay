@@ -34,22 +34,22 @@ contract PaymentsTest is Test {
 
     function setUp() public {
         usdc = new MockERC20("USDC", "USDC", 6);
-        
+
         NetworkConfig networkConfig = new NetworkConfig();
-        
+
         payments = new Payments(address(networkConfig));
-        
+
         vm.startPrank(payments.i_owner());
         address[] memory stablecoins = new address[](1);
         stablecoins[0] = address(usdc);
         address[] memory priceFeeds = new address[](1);
         priceFeeds[0] = address(1); // Mock price feed
-        
+
         for (uint256 i = 0; i < stablecoins.length; i++) {
             payments.addSupportedStablecoin(stablecoins[i], priceFeeds[i]);
         }
         vm.stopPrank();
-        
+
         vm.deal(user1, DEPOSIT_AMOUNT);
     }
 
