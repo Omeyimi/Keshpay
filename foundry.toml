@@ -7,7 +7,8 @@ optimizer = true
 optimizer_runs = 200
 
 remappings = [
-    "@openzeppelin=lib/openzeppelin-contracts",
-    "@chainlink=lib/chainlink-brownie-contracts",
-    "solmate=lib/solmate/src"
+    "@openzeppelin=lib/openzeppelin-contracts/",
+    "@chainlink=lib/chainlink-brownie-contracts/",
+    "solmate=lib/solmate/src/",
+    "forge-std=lib/forge-std/src/"
 ] 
