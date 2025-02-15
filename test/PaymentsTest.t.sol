@@ -29,6 +29,14 @@ contract PaymentsTest is Test {
         vm.deal(user1, DEPOSIT_AMOUNT);
     }
 
+    function setUpUser1WithDeposit() public {
+        vm.startPrank(user1);
+        payments.initializeWallet(user1);
+        usdc.mint(user1, DEPOSIT_AMOUNT);
+        usdc.approve(address(payments), DEPOSIT_AMOUNT);
+        payments.deposit(address(usdc), DEPOSIT_AMOUNT);
+    }
+
     function testCanInitializeWallet() public {
         vm.prank(user1);
         payments.initializeWallet(user1);
@@ -86,12 +94,38 @@ contract PaymentsTest is Test {
         vm.stopPrank();
     }
 
-    function testSendPayment() public {
+    function testRevertInvalidTokenSendPayment() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAddress.selector);
+        payments.sendPayment(user2, address(0x0), DEPOSIT_AMOUNT, "test");
+        vm.stopPrank();
+    }
+
+    function testRevertUnsupportedTokenSendPayment() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
+        payments.sendPayment(user2, address(0x2), DEPOSIT_AMOUNT, "test");
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidAmountSendPayment() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAmount.selector);
+        payments.sendPayment(user2, address(usdc), 0, "test");
+        vm.stopPrank();
+    }
+
+    function testRevertInsufficentBalanceSendPayment() public {
         vm.startPrank(user1);
         payments.initializeWallet(user1);
-        usdc.mint(user1, DEPOSIT_AMOUNT);
-        usdc.approve(address(payments), DEPOSIT_AMOUNT);
-        payments.deposit(address(usdc), DEPOSIT_AMOUNT);
+
+        vm.expectRevert(Payments.Payments__InsufficientBalance.selector);
+        payments.sendPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
+        vm.stopPrank();
+    }
+
+    function testSendPayment() public {
+        setUpUser1WithDeposit();
 
         payments.sendPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         assertEq(usdc.balanceOf(address(payments)), 0);
@@ -111,15 +145,27 @@ contract PaymentsTest is Test {
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }
-    /*
-    assertEq(expected.id, result.id);
-        assertEq(expected.token, result.token);
-        assertEq(expected.sender, result.sender);
-        assertEq(expected.receiver, result.receiver);
-        assertEq(expected.amount, result.amount);
-        assertEq(expected.note, result.note);
-        assertEq(expected.completed, result.completed);
-        */
+    
+    function testInvalidTokenRequestPayment() public {
+        vm.startPrank(user1);
+        vm.expectRevert(Payments.Payments__InvalidAddress.selector);
+        payments.requestPayment(user2, address(0x0), DEPOSIT_AMOUNT, "test");
+        vm.stopPrank();
+    }
+
+    function testUnsupportedTokenRequestPayment() public {
+        vm.startPrank(user1);
+        vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
+        payments.requestPayment(user2, address(0x2), DEPOSIT_AMOUNT, "test");
+        vm.stopPrank();
+    }
+
+    function testInvalidAmountRequestPayment() public {
+        vm.startPrank(user1);
+        vm.expectRevert(Payments.Payments__InvalidAmount.selector);
+        payments.requestPayment(user2, address(usdc), 0, "test");
+        vm.stopPrank();
+    }
 
     function testRequestPayment() public {
         vm.startPrank(user1);
@@ -140,12 +186,49 @@ contract PaymentsTest is Test {
         vm.stopPrank();
     }
 
-    function testFulfillPayment() public {
+    function testInsufficentBalanceFulfillPayment() public {
         vm.startPrank(user1);
         payments.initializeWallet(user1);
-        usdc.mint(user1, DEPOSIT_AMOUNT);
-        usdc.approve(address(payments), DEPOSIT_AMOUNT);
-        payments.deposit(address(usdc), DEPOSIT_AMOUNT);
+
+        vm.startPrank(user2);
+        payments.initializeWallet(user2);
+
+        payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        vm.startPrank(user1);
+        vm.expectRevert(Payments.Payments__InsufficientBalance.selector);
+        payments.fulfillPayment(0);
+        vm.stopPrank();
+    }
+
+    function testTransactionCompletedFulfillPayment() public {
+        setUpUser1WithDeposit();
+
+        vm.startPrank(user2);
+        payments.initializeWallet(user2);
+
+        payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        vm.startPrank(user1);
+        payments.fulfillPayment(0);
+        vm.expectRevert(Payments.Payments__TransactionCompleted.selector);
+        payments.fulfillPayment(0);
+        vm.stopPrank();
+    }
+
+    function testInvalidTransactionIdFulfillPayment() public {
+        setUpUser1WithDeposit();
+
+        vm.startPrank(user2);
+        payments.initializeWallet(user2);
+
+        payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        vm.startPrank(user1);
+        vm.expectRevert(Payments.Payments__InvalidTransactionId.selector);
+        payments.fulfillPayment(1);
+        vm.stopPrank();
+    }
+
+    function testFulfillPayment() public {
+        setUpUser1WithDeposit();
 
         vm.startPrank(user2);
         payments.initializeWallet(user2);

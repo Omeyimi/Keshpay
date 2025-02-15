@@ -27,6 +27,7 @@ contract Payments {
     error Payments__ArrayLengthMismatch();
     error Payments__NoStablecoinsProvided();
     error Payments__TransactionCompleted();
+    error Payments__InvalidTransactionId();
 
     ////////////////
     // Structs    //
@@ -196,11 +197,12 @@ contract Payments {
      * @param requestId The id of transaction for msg.sender
      */
     function fulfillPayment(uint256 requestId) external {
+        if (transactions[msg.sender].length <= requestId) revert Payments__InvalidTransactionId();
         Transaction memory transaction = transactions[msg.sender][requestId];
         if (transaction.completed) revert Payments__TransactionCompleted();
         if (wallets[msg.sender].balances[transaction.token] < transaction.amount) revert Payments__InsufficientBalance();
 
-        _sendPayment(requestId);    
+        _sendPayment(requestId);
     }
 
     // Tracking transactions
