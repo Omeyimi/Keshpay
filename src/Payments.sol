@@ -5,6 +5,7 @@ pragma solidity ^0.8.20;
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {NetworkConfig} from "../script/NetworkConfig.s.sol";
 
 /**
  * @title Payments
@@ -26,6 +27,8 @@ contract Payments {
     error Payments__UnsupportedStablecoin();
     error Payments__ArrayLengthMismatch();
     error Payments__NoStablecoinsProvided();
+    error Payments__StalePrice();
+    error Payments__InvalidPrice();
 
     ////////////////
     // Structs    //
@@ -46,6 +49,9 @@ contract Payments {
         bool initialized;
         mapping(address => uint256) balances;
     }
+    
+    address public immutable i_owner;
+    NetworkConfig public immutable i_networkConfig;
 
     ////////////////
     // Mappings   //
@@ -64,29 +70,50 @@ contract Payments {
     event TransactionCreated(address sender, address to, uint256 amount, string note);
     event WalletInitialized(address indexed wallet, address indexed owner);
 
-    address public immutable i_owner;
 
-    constructor(address[] memory _stablecoins, address[] memory _priceFeeds) {
+    /**
+     * @notice Constructor for the Payments contract
+     * @param _networkConfig The address of the NetworkConfig contract
+     */
+    constructor(address _networkConfig) {
         i_owner = msg.sender;
-        if (_stablecoins.length != _priceFeeds.length) revert Payments__ArrayLengthMismatch();
-        if (_stablecoins.length == 0) revert Payments__NoStablecoinsProvided();
+        i_networkConfig = NetworkConfig(_networkConfig);
+        
+        // Get network addresses
+        NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
 
-        for (uint256 i = 0; i < _stablecoins.length; i++) {
-            supportedStablecoins[_stablecoins[i]] = true;
-            tokenPriceFeeds[_stablecoins[i]] = _priceFeeds[i];
+        address[] memory stablecoins = new address[](3);
+        stablecoins[0] = addresses.usdc;
+        stablecoins[1] = addresses.usdt;
+        stablecoins[2] = addresses.dai;
+        
+        address[] memory priceFeeds = new address[](3);
+        priceFeeds[0] = addresses.usdcPriceFeed;
+        priceFeeds[1] = addresses.usdtPriceFeed;
+        priceFeeds[2] = addresses.daiPriceFeed;
+        
+        if (stablecoins.length == 0) revert Payments__NoStablecoinsProvided();
+
+        for (uint256 i = 0; i < stablecoins.length; i++) {
+            supportedStablecoins[stablecoins[i]] = true;
+            tokenPriceFeeds[stablecoins[i]] = priceFeeds[i];
         }
     }
 
     ////////////////
     // Modifiers  //
     ////////////////
+    /**
+     * @notice Modifier to check if a wallet is initialized
+     * @param _wallet The address of the wallet to check
+     */
     modifier initializedWallet(address _wallet) {
         if (!wallets[_wallet].initialized) revert Payments__WalletNotInitialized();
         _;
     }
 
     /////////////////////////
-    // External Functions //
+    // External Functions  //
     /////////////////////////
     /**
      * @notice Initialize a wallet for a user
@@ -167,13 +194,31 @@ contract Payments {
         emit TransactionCreated(sender, to, amount, note);
     }
 
-    function getTransactionHistory(address user) external view returns (Transaction[] memory) {}
+    function getTransactionHistory(address user) external view returns (Transaction[] memory) {
+        return transactions[user];
+    }
 
-    function getTransactionDetails(uint256 transactionId) external view returns (Transaction[] memory) {}
+    function getTransactionDetails(uint256 transactionId) external view returns (Transaction memory) {
+        return transactions[msg.sender][transactionId];
+    }
 
     function getTokenPrice(address _token) public view returns (uint256) {
         address priceFeed = tokenPriceFeeds[_token];
-        (, int256 price,,,) = AggregatorV3Interface(priceFeed).latestRoundData();
+        if (priceFeed == address(0)) revert Payments__UnsupportedStablecoin();
+        
+        (
+            uint80 roundId,
+            int256 price,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = AggregatorV3Interface(priceFeed).latestRoundData();
+        
+        // Check for stale data
+        if (updatedAt == 0 || updatedAt > block.timestamp) revert Payments__StalePrice();
+        if (price <= 0) revert Payments__InvalidPrice();
+        
+        // Chainlink price feeds for USD pairs return prices with 8 decimals
         return uint256(price);
     }
 }
