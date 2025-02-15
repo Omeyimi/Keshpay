@@ -27,11 +27,16 @@ contract Payments {
     error Payments__UnsupportedStablecoin();
     error Payments__ArrayLengthMismatch();
     error Payments__NoStablecoinsProvided();
+<<<<<<< HEAD
     error Payments__TransactionCompleted();
     error Payments__InvalidTransactionId();
     error Payments__StalePrice();
     error Payments__InvalidPrice();
     error Payments__Unauthorized();
+=======
+    error Payments__StalePrice();
+    error Payments__InvalidPrice();
+>>>>>>> main
 
     ////////////////
     // Structs    //
@@ -53,6 +58,9 @@ contract Payments {
         bool initialized;
         mapping(address => uint256) balances;
     }
+    
+    address public immutable i_owner;
+    NetworkConfig public immutable i_networkConfig;
 
     address public immutable i_owner;
     NetworkConfig public immutable i_networkConfig;
@@ -75,6 +83,10 @@ contract Payments {
     event WalletInitialized(address indexed wallet, address indexed owner);
     event PaymentSend(address token, address user, address recipient, uint256 amount);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
     /**
      * @notice Constructor for the Payments contract
      * @param _networkConfig The address of the NetworkConfig contract
@@ -82,20 +94,35 @@ contract Payments {
     constructor(address _networkConfig) {
         i_owner = msg.sender;
         i_networkConfig = NetworkConfig(_networkConfig);
+<<<<<<< HEAD
 
         // Get network addresses
         NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
 
+=======
+        
+        // Get network addresses
+        NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
+
+>>>>>>> main
         address[] memory stablecoins = new address[](3);
         stablecoins[0] = addresses.usdc;
         stablecoins[1] = addresses.usdt;
         stablecoins[2] = addresses.dai;
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> main
         address[] memory priceFeeds = new address[](3);
         priceFeeds[0] = addresses.usdcPriceFeed;
         priceFeeds[1] = addresses.usdtPriceFeed;
         priceFeeds[2] = addresses.daiPriceFeed;
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> main
         if (stablecoins.length == 0) revert Payments__NoStablecoinsProvided();
 
         for (uint256 i = 0; i < stablecoins.length; i++) {
@@ -264,14 +291,18 @@ contract Payments {
         emit TransactionCreated(sender, to, token, amount, note);
     }
 
+<<<<<<< HEAD
     /**
      * @notice Get all transactions from a user
      * @param user The user to get all transactions from
      */
+=======
+>>>>>>> main
     function getTransactionHistory(address user) external view returns (Transaction[] memory) {
         return transactions[user];
     }
 
+<<<<<<< HEAD
     /**
      * @notice Get a transaction from a user
      * @param user The user to get all transactions from
@@ -279,11 +310,16 @@ contract Payments {
      */
     function getTransactionDetails(address user, uint256 transactionId) external view returns (Transaction memory) {
         return transactions[user][transactionId];
+=======
+    function getTransactionDetails(uint256 transactionId) external view returns (Transaction memory) {
+        return transactions[msg.sender][transactionId];
+>>>>>>> main
     }
 
     function getTokenPrice(address _token) public view returns (uint256) {
         address priceFeed = tokenPriceFeeds[_token];
         if (priceFeed == address(0)) revert Payments__UnsupportedStablecoin();
+<<<<<<< HEAD
 
         (
             /* uint80 roundId */
@@ -299,6 +335,22 @@ contract Payments {
         if (updatedAt == 0 || updatedAt > block.timestamp) revert Payments__StalePrice();
         if (price <= 0) revert Payments__InvalidPrice();
 
+=======
+        
+        (
+            uint80 roundId,
+            int256 price,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = AggregatorV3Interface(priceFeed).latestRoundData();
+        
+        // Check for stale data
+        if (updatedAt == 0 || updatedAt > block.timestamp) revert Payments__StalePrice();
+        if (price <= 0) revert Payments__InvalidPrice();
+        
+        // Chainlink price feeds for USD pairs return prices with 8 decimals
+>>>>>>> main
         return uint256(price);
     }
 
