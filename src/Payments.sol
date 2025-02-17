@@ -48,7 +48,6 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
         address sender;
         address receiver;
         string note;
-        bool completed;
     }
 
     struct userWallet {
@@ -75,9 +74,9 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
     ////////////////
     event Deposited(address token, address user, uint256 amount);
     event Withdrawn(address token, address user, uint256 amount);
-    event TransactionCreated(address sender, address to, address token, uint256 amount, string note);
+    event TransactionCreated(uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp);
     event WalletInitialized(address indexed wallet, address indexed owner);
-    event PaymentSend(address token, address user, address recipient, uint256 amount);
+    event TransactionCompleted(uint256 id, address token, address user, address recipient, uint256 amount, string note, uint256 timestamp);
 
     /**
      * @notice Constructor for the Payments contract
@@ -183,12 +182,26 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
      * @notice Internal function executes the payment and completes the transaction
      * @param requestId The id of transaction for msg.sender
      */
-    function _sendPayment(uint256 requestId) internal {
+    function _sendPayment(uint256 requestId) internal nonReentrant {
         Transaction storage transaction = transactions[msg.sender][requestId];
         wallets[msg.sender].balances[transaction.token] -= transaction.amount;
         IERC20(transaction.token).safeTransfer(transaction.receiver, transaction.amount);
-        transaction.completed = true;
-        emit PaymentSend(transaction.token, msg.sender, transaction.receiver, transaction.amount);
+        
+        _cancelRequest(transaction.sender, requestId);
+
+        emit TransactionCompleted(transaction.id, transaction.token, msg.sender, transaction.receiver, transaction.amount, transaction.note, block.timestamp);
+    }
+
+    /**
+     * @notice Internal function removes a transaction request
+     * @param user The address of user to remove transaction
+     * @param requestId The id of transaction for msg.sender
+     */
+    function _cancelRequest(address user, uint256 requestId) internal {
+        for (uint256 i = requestId; i < transactions[user].length - 1; i++) {
+            transactions[user][i] = transactions[user][i + 1];
+        }
+        transactions[user].pop();
     }
 
     /**
@@ -230,10 +243,7 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
     function fulfillPayment(uint256 requestId) external whenNotPaused {
         if (transactions[msg.sender].length <= requestId) revert Payments__InvalidTransactionId();
         Transaction memory transaction = transactions[msg.sender][requestId];
-        if (transaction.completed) revert Payments__TransactionCompleted();
-        if (wallets[msg.sender].balances[transaction.token] < transaction.amount) {
-            revert Payments__InsufficientBalance();
-        }
+        if (wallets[msg.sender].balances[transaction.token] < transaction.amount) revert Payments__InsufficientBalance();
 
         _sendPayment(requestId);
     }
@@ -253,20 +263,20 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
     {
         Transaction[] storage userTransactions = transactions[sender];
         s_transactionCounter++;
+        uint256 timestamp = block.timestamp;
 
         userTransactions.push(
             Transaction({
                 id: s_transactionCounter,
                 token: token,
                 amount: amount,
-                timestamp: block.timestamp,
+                timestamp: timestamp,
                 sender: sender,
                 receiver: to,
-                note: note,
-                completed: false
+                note: note
             })
         );
-        emit TransactionCreated(sender, to, token, amount, note);
+        emit TransactionCreated(s_transactionCounter, sender, to, token, amount, note, timestamp);
     }
 
     function getTransactionHistory(address user) external view returns (Transaction[] memory) {
