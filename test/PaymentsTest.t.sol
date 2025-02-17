@@ -3,6 +3,8 @@
 pragma solidity ^0.8.20;
 
 import {Payments} from "../src/Payments.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {MockERC20} from "../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
@@ -276,6 +278,34 @@ contract PaymentsTest is Test {
         });
         Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.stopPrank();
+    }
+
+    function testEmergencyPause() public {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        payments.emergencyPause();
+        vm.startPrank(payments.owner());
+        payments.emergencyPause();
+
+        vm.startPrank(user1);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.initializeWallet(user1);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.deposit(USDC, DEPOSIT_AMOUNT);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.withdraw(USDC, DEPOSIT_AMOUNT);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.sendPayment(user2, USDC, DEPOSIT_AMOUNT, "test");
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.requestPayment(user2, USDC, DEPOSIT_AMOUNT, "test");
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.fulfillPayment(0);
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        payments.unpause();
+        vm.startPrank(payments.owner());
+        payments.unpause();
         vm.stopPrank();
     }
 }
