@@ -20,6 +20,12 @@ contract PaymentsTest is Test {
 
     uint256 public constant DEPOSIT_AMOUNT = 100 ether;
 
+    event Deposited(address token, address user, uint256 amount);
+    event Withdrawn(address token, address user, uint256 amount);
+    event TransactionCreated(uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp);
+    event WalletInitialized(address indexed wallet, address indexed owner);
+    event TransactionCompleted(uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp);
+
     function encodeTransaction(Payments.Transaction memory transaction) public pure returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -64,6 +70,8 @@ contract PaymentsTest is Test {
 
     function testCanInitializeWallet() public {
         vm.prank(user1);
+        vm.expectEmit();
+        emit WalletInitialized(user1, user1);
         payments.initializeWallet(user1);
 
         // Get wallet info
@@ -103,6 +111,8 @@ contract PaymentsTest is Test {
 
         usdc.approve(address(payments), DEPOSIT_AMOUNT);
 
+        vm.expectEmit();
+        emit Deposited(address(usdc), user1, DEPOSIT_AMOUNT);
         payments.deposit(address(usdc), DEPOSIT_AMOUNT);
 
         assertEq(usdc.balanceOf(address(payments)), DEPOSIT_AMOUNT);
@@ -116,6 +126,40 @@ contract PaymentsTest is Test {
 
         vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
         payments.deposit(address(0x2), DEPOSIT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testWithdraw() public {
+        setUpUser1WithDeposit();
+
+        vm.expectEmit();
+        emit Withdrawn(address(usdc), user1, DEPOSIT_AMOUNT);
+        payments.withdraw(address(usdc), DEPOSIT_AMOUNT);
+        assertEq(usdc.balanceOf(address(payments)), 0);
+        assertEq(payments.getBalance(address(usdc)), 0);
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidTokenWithdraw() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAddress.selector);
+        payments.withdraw(address(0x0), DEPOSIT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidAmountWithdraw() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAmount.selector);
+        payments.withdraw(address(usdc), 0);
+        vm.stopPrank();
+    }
+
+    function testRevertInsufficentBalanceWithdraw() public {
+        vm.startPrank(user1);
+        payments.initializeWallet(user1);
+
+        vm.expectRevert(Payments.Payments__InsufficientBalance.selector);
+        payments.withdraw(address(usdc), DEPOSIT_AMOUNT);
         vm.stopPrank();
     }
 
@@ -152,6 +196,9 @@ contract PaymentsTest is Test {
     function testSendPayment() public {
         setUpUser1WithDeposit();
 
+        vm.expectEmit();
+        emit TransactionCreated(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
+        emit TransactionCompleted(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.sendPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         assertEq(usdc.balanceOf(address(payments)), 0);
         assertEq(payments.getBalance(address(usdc)), 0);
@@ -188,6 +235,8 @@ contract PaymentsTest is Test {
         vm.startPrank(user1);
 
         assertEq(payments.getTransactionHistory(user2).length, 0);
+        vm.expectEmit();
+        emit TransactionCreated(1, user2, user1, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.requestPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         Payments.Transaction memory expected = Payments.Transaction({
             id: 1,
@@ -241,9 +290,13 @@ contract PaymentsTest is Test {
         vm.startPrank(user2);
         payments.initializeWallet(user2);
 
+        vm.expectEmit();
+        emit TransactionCreated(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
         assertEq(payments.getTransactionHistory(user1).length, 1);
+        
         vm.startPrank(user1);
+        emit TransactionCompleted(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.fulfillPayment(0);
 
         assertEq(payments.getTransactionHistory(user1).length, 0);

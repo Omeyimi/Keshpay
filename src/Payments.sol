@@ -76,7 +76,7 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
     event Withdrawn(address token, address user, uint256 amount);
     event TransactionCreated(uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp);
     event WalletInitialized(address indexed wallet, address indexed owner);
-    event TransactionCompleted(uint256 id, address token, address user, address recipient, uint256 amount, string note, uint256 timestamp);
+    event TransactionCompleted(uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp);
 
     /**
      * @notice Constructor for the Payments contract
@@ -189,7 +189,7 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
         
         _cancelRequest(transaction.sender, requestId);
 
-        emit TransactionCompleted(transaction.id, transaction.token, msg.sender, transaction.receiver, transaction.amount, transaction.note, block.timestamp);
+        emit TransactionCompleted(transaction.id, msg.sender, transaction.receiver, transaction.token, transaction.amount, transaction.note, block.timestamp);
     }
 
     /**
