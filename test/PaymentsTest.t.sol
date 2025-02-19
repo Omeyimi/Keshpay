@@ -47,7 +47,7 @@ contract PaymentsTest is Test {
     }
 
     function setUp() public {
-        vm.chainId(421614);
+        vm.chainId(84532); // BASE_SEPOLIA
 
         usdc = new MockERC20("USDC", "USDC", 6);
         NetworkConfig networkConfig = new NetworkConfig();

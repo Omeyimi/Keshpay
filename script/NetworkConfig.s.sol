@@ -15,26 +15,29 @@ contract NetworkConfig is Script {
         address daiPriceFeed;
     }
 
+    uint256 public constant BASE_MAINNET = 8453; // Base Mainnet
+    uint256 public constant BASE_SEPOLIA = 84532; // Base Sepolia
+
     function getNetworkAddresses() public view returns (NetworkAddresses memory) {
-        if (block.chainid == 42161) {
-            // Arbitrum One
+        if (block.chainid == BASE_MAINNET) {
+            // Base Mainnet
             return NetworkAddresses({
-                usdc: 0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8,
-                usdt: 0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9,
-                dai: 0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1,
-                usdcPriceFeed: 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3,
-                usdtPriceFeed: 0x3f3f5dF88dC9F13eac63DF89EC16ef6e7E25DdE7,
-                daiPriceFeed: 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB
+                usdc: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, // USDC on Base
+                usdt: 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb, // USDT on Base
+                dai: 0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb, // DAI on Base
+                usdcPriceFeed: 0x7e860098F58bBFC8648a4311b374B1D669a2bc6B,
+                usdtPriceFeed: 0xf19d560eB8d2ADf07BD6D13ed03e1D11215721F9,
+                daiPriceFeed: 0x591e79239a7d679378eC8c847e5038150364C78F
             });
-        } else if (block.chainid == 421614) {
-            // Arbitrum Sepolia
+        } else if (block.chainid == BASE_SEPOLIA) {
+            // Base Sepolia
             return NetworkAddresses({
-                usdc: 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d,
-                usdt: 0x80EDee6f667eCc9f63a0a6f55578F870651f06A4,
-                dai: 0xc22f0C8e910e5DB11Fe5Db1f5a809d1F432f6D25,
-                usdcPriceFeed: 0x0153002d20B96532C639313c2d54c3dA09109309,
-                usdtPriceFeed: 0x332BB5D9a4D539A32e559B71F9eb6b38935c5a57,
-                daiPriceFeed: 0xb113F5A928BCfF189C998ab20d753a47F9dE5A61
+                usdc: 0x036CBD53842c5426634e7929541ec2318F3DCF7C, // USDC
+                usdt: 0x1721Dff28fc0c6442386C21ab41d237aeA1d4d4C, // USDT
+                dai: 0x7d691e6b03b18E06e6d0DE1D364a4E409cD08C4b, // DAI
+                usdcPriceFeed: 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165,
+                usdtPriceFeed: 0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165,
+                daiPriceFeed: 0xD1092a65338d049DB68D7Be6bD89d17a0929945e
             });
         }
         revert NetworkConfig__NetworkNotSupported();

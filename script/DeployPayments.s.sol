@@ -7,12 +7,13 @@ import {NetworkConfig} from "./NetworkConfig.s.sol";
 
 contract DeployPayments is Script {
     function run() external returns (Payments) {
-        vm.startBroadcast();
-        
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
         NetworkConfig networkConfig = new NetworkConfig();
         Payments payments = new Payments(address(networkConfig));
-        
+
         vm.stopBroadcast();
         return payments;
     }
-} 
+}

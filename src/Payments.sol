@@ -85,13 +85,7 @@ contract Payments is ReentrancyGuard, Ownable, Pausable {
     event WalletInitialized(address indexed wallet, address indexed owner);
     event PaymentSend(address token, address user, address recipient, uint256 amount);
     event TransactionCompleted(
-        uint256 id,
-        address sender,
-        address to,
-        address token,
-        uint256 amount,
-        string note,
-        uint256 timestamp
+        uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp
     );
 
     /**
