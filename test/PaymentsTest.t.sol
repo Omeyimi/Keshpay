@@ -8,6 +8,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {MockERC20} from "../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
+import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
 import {MockFlags} from "./mocks/MockFlags.sol";
 import {FlagsInterface} from "@chainlink/contracts/src/v0.8/interfaces/FlagsInterface.sol";
