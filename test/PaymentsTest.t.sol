@@ -6,6 +6,9 @@ import {Payments} from "../src/Payments.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {MockERC20} from "../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
+import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
+import {MockFlags} from "./mocks/MockFlags.sol";
+import {FlagsInterface} from "@chainlink/contracts/src/v0.8/interfaces/FlagsInterface.sol";
 
 contract PaymentsTest is Test {
     Payments public payments;
@@ -33,10 +36,10 @@ contract PaymentsTest is Test {
     }
 
     function setUp() public {
+        vm.chainId(421614);
+
         usdc = new MockERC20("USDC", "USDC", 6);
-
         NetworkConfig networkConfig = new NetworkConfig();
-
         payments = new Payments(address(networkConfig));
 
         vm.startPrank(payments.owner());
@@ -277,5 +280,66 @@ contract PaymentsTest is Test {
         Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
+    }
+
+    function testGetTokenPrice() public {
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(8, 100000000); // $1.00 with 8 decimals
+
+        vm.mockCall(
+            0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b, // Chainlink Flags address
+            abi.encodeWithSelector(FlagsInterface.getFlag.selector),
+            abi.encode(false) // Feeds are working
+        );
+
+        vm.startPrank(payments.owner());
+        payments.addSupportedStablecoin(address(usdc), address(mockPriceFeed));
+        vm.stopPrank();
+
+        uint256 price = payments.getTokenPrice(address(usdc));
+        assertEq(price, 100000000);
+    }
+
+    function testGetTokenPriceRevertsOnStaleData() public {
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(8, 100000000);
+        mockPriceFeed.updateRoundData(0, 100000000, block.timestamp + 1, block.timestamp + 1);
+
+        vm.mockCall(
+            0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b,
+            abi.encodeWithSelector(FlagsInterface.getFlag.selector),
+            abi.encode(false)
+        );
+
+        vm.startPrank(payments.owner());
+        payments.addSupportedStablecoin(address(usdc), address(mockPriceFeed));
+        vm.stopPrank();
+
+        vm.expectRevert(Payments.Payments__StalePrice.selector);
+        payments.getTokenPrice(address(usdc));
+    }
+
+    function testGetTokenPriceRevertsOnInvalidPrice() public {
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(8, 0); // Price of 0
+
+        vm.mockCall(
+            0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b,
+            abi.encodeWithSelector(FlagsInterface.getFlag.selector),
+            abi.encode(false)
+        );
+
+        vm.startPrank(payments.owner());
+        payments.addSupportedStablecoin(address(usdc), address(mockPriceFeed));
+        vm.stopPrank();
+
+        vm.expectRevert(Payments.Payments__InvalidPrice.selector);
+        payments.getTokenPrice(address(usdc));
+    }
+
+    function testCanAddSupportedStableCoin() public {
+        MockV3Aggregator mockPriceFeed = new MockV3Aggregator(8, 100000000);
+        vm.startPrank(payments.owner());
+        payments.addSupportedStablecoin(address(usdc), address(mockPriceFeed));
+        vm.stopPrank();
+        assertEq(payments._isStablecoinSupported(address(usdc)), true);
+        assertEq(payments.tokenPriceFeeds(address(usdc)), address(mockPriceFeed));
     }
 }

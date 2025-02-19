@@ -3,6 +3,7 @@
 pragma solidity ^0.8.20;
 
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {FlagsInterface} from "@chainlink/contracts/src/v0.8/interfaces/FlagsInterface.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
@@ -27,14 +28,13 @@ contract Payments is ReentrancyGuard, Ownable {
     error Payments__InvalidAmount();
     error Payments__InvalidAddress();
     error Payments__UnsupportedStablecoin();
-    error Payments__ArrayLengthMismatch();
     error Payments__NoStablecoinsProvided();
     error Payments__TransactionCompleted();
     error Payments__InvalidTransactionId();
     error Payments__StalePrice();
     error Payments__InvalidPrice();
     error Payments__Unauthorized();
-    error Payments__NoTransactions();
+    error Payments__ChainlinkFeedsNotBeingUpdated();
 
     ////////////////
     // Structs    //
@@ -57,7 +57,10 @@ contract Payments is ReentrancyGuard, Ownable {
         mapping(address => uint256) balances;
     }
 
+    address private constant FLAG_ARBITRUM_SEQ_OFFLINE =
+        address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
     NetworkConfig public immutable i_networkConfig;
+    FlagsInterface internal chainlinkFlags;
     uint256 private s_transactionCounter;
 
     ////////////////
@@ -66,7 +69,7 @@ contract Payments is ReentrancyGuard, Ownable {
     mapping(address => Transaction[]) public transactions;
     mapping(address => userWallet) public wallets;
     // Supported stablecoins mapping
-    mapping(address => bool) private supportedStablecoins;
+    mapping(address => bool) public supportedStablecoins;
     mapping(address => address) public tokenPriceFeeds;
 
     ////////////////
@@ -85,8 +88,8 @@ contract Payments is ReentrancyGuard, Ownable {
     constructor(address _networkConfig) Ownable(msg.sender) {
         i_networkConfig = NetworkConfig(_networkConfig);
         s_transactionCounter = 0;
+        chainlinkFlags = FlagsInterface(0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b);
 
-        // Get network addresses
         NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
 
         address[] memory stablecoins = new address[](3);
@@ -283,7 +286,21 @@ contract Payments is ReentrancyGuard, Ownable {
         revert Payments__InvalidTransactionId();
     }
 
+    function addSupportedStablecoin(address _token, address _priceFeed) external onlyOwner {
+        if (msg.sender != owner()) revert Payments__Unauthorized();
+        supportedStablecoins[_token] = true;
+        tokenPriceFeeds[_token] = _priceFeed;
+    }
+
+    function emergencyWithdraw(address _token) external onlyOwner {
+        IERC20(_token).safeTransfer(owner(), IERC20(_token).balanceOf(address(this)));
+    }
+
     function getTokenPrice(address _token) public view returns (uint256) {
+        bool isRaised = chainlinkFlags.getFlag(FLAG_ARBITRUM_SEQ_OFFLINE);
+        if (isRaised) {
+            revert Payments__ChainlinkFeedsNotBeingUpdated();
+        }
         address priceFeed = tokenPriceFeeds[_token];
         if (priceFeed == address(0)) revert Payments__UnsupportedStablecoin();
 
@@ -299,14 +316,8 @@ contract Payments is ReentrancyGuard, Ownable {
         return uint256(price);
     }
 
-    function addSupportedStablecoin(address _token, address _priceFeed) external {
-        if (msg.sender != owner()) revert Payments__Unauthorized();
-        supportedStablecoins[_token] = true;
-        tokenPriceFeeds[_token] = _priceFeed;
-    }
-
-    function emergencyWithdraw(address _token) external onlyOwner {
-        IERC20(_token).safeTransfer(owner(), IERC20(_token).balanceOf(address(this)));
+    function _isStablecoinSupported(address _token) public view returns (bool) {
+        return supportedStablecoins[_token];
     }
 
     receive() external payable {
