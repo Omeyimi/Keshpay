@@ -168,9 +168,10 @@ contract PaymentsTest is Test {
             note: "test",
             completed: true
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
-        assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.startPrank(user1);
+        Payments.Transaction memory result = payments.getTransactionDetails(0);
         vm.stopPrank();
+        assertEq(encodeTransaction(expected), encodeTransaction(result));
     }
 
     function testInvalidTokenRequestPayment() public {
@@ -208,9 +209,10 @@ contract PaymentsTest is Test {
             note: "test",
             completed: false
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user2, 1);
-        assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.startPrank(user2);
+        Payments.Transaction memory result = payments.getTransactionDetails(0);
         vm.stopPrank();
+        assertEq(encodeTransaction(expected), encodeTransaction(result));
     }
 
     function testInsufficentBalanceFulfillPayment() public {
@@ -277,7 +279,7 @@ contract PaymentsTest is Test {
             note: "test",
             completed: true
         });
-        Payments.Transaction memory result = payments.getTransactionDetails(user1, 1);
+        Payments.Transaction memory result = payments.getTransactionDetails(0);
         assertEq(encodeTransaction(expected), encodeTransaction(result));
         vm.stopPrank();
     }
@@ -339,7 +341,7 @@ contract PaymentsTest is Test {
         vm.startPrank(payments.owner());
         payments.addSupportedStablecoin(address(usdc), address(mockPriceFeed));
         vm.stopPrank();
-        assertEq(payments._isStablecoinSupported(address(usdc)), true);
+        assertEq(payments.isStablecoinSupported(address(usdc)), true);
         assertEq(payments.tokenPriceFeeds(address(usdc)), address(mockPriceFeed));
     }
 }

@@ -33,7 +33,6 @@ contract Payments is ReentrancyGuard, Ownable {
     error Payments__InvalidTransactionId();
     error Payments__StalePrice();
     error Payments__InvalidPrice();
-    error Payments__Unauthorized();
     error Payments__ChainlinkFeedsNotBeingUpdated();
 
     ////////////////
@@ -57,12 +56,6 @@ contract Payments is ReentrancyGuard, Ownable {
         mapping(address => uint256) balances;
     }
 
-    address private constant FLAG_ARBITRUM_SEQ_OFFLINE =
-        address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
-    NetworkConfig public immutable i_networkConfig;
-    FlagsInterface internal chainlinkFlags;
-    uint256 private s_transactionCounter;
-
     ////////////////
     // Mappings   //
     ////////////////
@@ -81,6 +74,15 @@ contract Payments is ReentrancyGuard, Ownable {
     event WalletInitialized(address indexed wallet, address indexed owner);
     event PaymentSend(address token, address user, address recipient, uint256 amount);
 
+    ////////////////////
+    // State variables///
+    /////////////////////
+    address private constant FLAG_ARBITRUM_SEQ_OFFLINE =
+        address(bytes20(bytes32(uint256(keccak256("chainlink.flags.arbitrum-seq-offline")) - 1)));
+    NetworkConfig public immutable i_networkConfig;
+    FlagsInterface internal chainlinkFlags;
+    uint256 private s_transactionCounter;
+
     /**
      * @notice Constructor for the Payments contract
      * @param _networkConfig The address of the NetworkConfig contract
@@ -90,6 +92,7 @@ contract Payments is ReentrancyGuard, Ownable {
         s_transactionCounter = 0;
         chainlinkFlags = FlagsInterface(0x491B1dDA0A8fa069bbC1125133A975BF4e85a91b);
 
+        // Get network addresses
         NetworkConfig.NetworkAddresses memory addresses = i_networkConfig.getNetworkAddresses();
 
         address[] memory stablecoins = new address[](3);
@@ -275,25 +278,9 @@ contract Payments is ReentrancyGuard, Ownable {
         return transactions[user];
     }
 
-    function getTransactionDetails(address user, uint256 transactionId) external view returns (Transaction memory) {
-        Transaction[] storage userTransactions = transactions[user];
-
-        for (uint256 i = 0; i < userTransactions.length; i++) {
-            if (userTransactions[i].id == transactionId) {
-                return userTransactions[i];
-            }
-        }
-        revert Payments__InvalidTransactionId();
-    }
-
-    function addSupportedStablecoin(address _token, address _priceFeed) external onlyOwner {
-        if (msg.sender != owner()) revert Payments__Unauthorized();
-        supportedStablecoins[_token] = true;
-        tokenPriceFeeds[_token] = _priceFeed;
-    }
-
-    function emergencyWithdraw(address _token) external onlyOwner {
-        IERC20(_token).safeTransfer(owner(), IERC20(_token).balanceOf(address(this)));
+    function getTransactionDetails(uint256 transactionId) external view returns (Transaction memory) {
+        if (transactionId >= transactions[msg.sender].length) revert Payments__InvalidTransactionId();
+        return transactions[msg.sender][transactionId];
     }
 
     function getTokenPrice(address _token) public view returns (uint256) {
@@ -308,19 +295,20 @@ contract Payments is ReentrancyGuard, Ownable {
             , int256 price, /* uint256 startedAt */, uint256 updatedAt, /* uint80 answeredInRound */
         ) = AggregatorV3Interface(priceFeed).latestRoundData();
 
-        // Check for stale data
         if (updatedAt == 0 || updatedAt > block.timestamp) revert Payments__StalePrice();
         if (price <= 0) revert Payments__InvalidPrice();
 
-        // Chainlink price feeds for USD pairs return prices with 8 decimals
         return uint256(price);
     }
 
-    function _isStablecoinSupported(address _token) public view returns (bool) {
+    function addSupportedStablecoin(address _token, address _priceFeed) external onlyOwner {
+        supportedStablecoins[_token] = true;
+        tokenPriceFeeds[_token] = _priceFeed;
+    }
+
+    function isStablecoinSupported(address _token) external view returns (bool) {
         return supportedStablecoins[_token];
     }
 
-    receive() external payable {
-        revert("Ether payments are not supported");
-    }
+    receive() external payable {}
 }
