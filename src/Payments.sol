@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
 
 /**
@@ -16,7 +17,7 @@ import {NetworkConfig} from "../script/NetworkConfig.s.sol";
  * @notice A simple payment system that allows users to deposit and withdraw tokens, and send and request payments
  * @dev This contract is designed to be used with the Chainlink Price Feeds contract
  */
-contract Payments is ReentrancyGuard, Ownable {
+contract Payments is ReentrancyGuard, Ownable, Pausable {
     using SafeERC20 for IERC20;
     ////////////////
     // Error codes//
@@ -46,7 +47,6 @@ contract Payments is ReentrancyGuard, Ownable {
         address sender;
         address receiver;
         string note;
-        bool completed;
     }
 
     struct userWallet {
@@ -65,15 +65,6 @@ contract Payments is ReentrancyGuard, Ownable {
     mapping(address => bool) public supportedStablecoins;
     mapping(address => address) public tokenPriceFeeds;
 
-    ////////////////
-    // Events     //
-    ////////////////
-    event Deposited(address token, address user, uint256 amount);
-    event Withdrawn(address token, address user, uint256 amount);
-    event TransactionCreated(address sender, address to, address token, uint256 amount, string note);
-    event WalletInitialized(address indexed wallet, address indexed owner);
-    event PaymentSend(address token, address user, address recipient, uint256 amount);
-
     ////////////////////
     // State variables///
     /////////////////////
@@ -82,6 +73,26 @@ contract Payments is ReentrancyGuard, Ownable {
     NetworkConfig public immutable i_networkConfig;
     FlagsInterface internal chainlinkFlags;
     uint256 private s_transactionCounter;
+
+    ////////////////
+    // Events     //
+    ////////////////
+    event Deposited(address token, address user, uint256 amount);
+    event Withdrawn(address token, address user, uint256 amount);
+    event TransactionCreated(
+        uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp
+    );
+    event WalletInitialized(address indexed wallet, address indexed owner);
+    event PaymentSend(address token, address user, address recipient, uint256 amount);
+    event TransactionCompleted(
+        uint256 id,
+        address sender,
+        address to,
+        address token,
+        uint256 amount,
+        string note,
+        uint256 timestamp
+    );
 
     /**
      * @notice Constructor for the Payments contract
@@ -133,7 +144,7 @@ contract Payments is ReentrancyGuard, Ownable {
      * @param _wallet The address of the wallet to initialize
      * @notice Wallet can contain stablecoins (USDC, USDT, DAI)
      */
-    function initializeWallet(address _wallet) external {
+    function initializeWallet(address _wallet) external whenNotPaused {
         if (wallets[_wallet].initialized) revert Payments__WalletAlreadyInitialized();
         wallets[_wallet].owner = msg.sender;
         wallets[_wallet].initialized = true;
@@ -145,7 +156,7 @@ contract Payments is ReentrancyGuard, Ownable {
      * @param _token The address of the stablecoin to deposit
      * @param _amount The amount of stablecoins to deposit
      */
-    function deposit(address _token, uint256 _amount) external initializedWallet(msg.sender) {
+    function deposit(address _token, uint256 _amount) external whenNotPaused initializedWallet(msg.sender) {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (!supportedStablecoins[_token]) revert Payments__UnsupportedStablecoin();
@@ -163,7 +174,12 @@ contract Payments is ReentrancyGuard, Ownable {
      * @param _token The address of the stablecoin to withdraw
      * @param _amount The amount of stablecoins to withdraw
      */
-    function withdraw(address _token, uint256 _amount) external nonReentrant initializedWallet(msg.sender) {
+    function withdraw(address _token, uint256 _amount)
+        external
+        whenNotPaused
+        nonReentrant
+        initializedWallet(msg.sender)
+    {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (wallets[msg.sender].balances[_token] < _amount) revert Payments__InsufficientBalance();
@@ -188,12 +204,34 @@ contract Payments is ReentrancyGuard, Ownable {
      * @notice Internal function executes the payment and completes the transaction
      * @param requestId The id of transaction for msg.sender
      */
-    function _sendPayment(uint256 requestId) internal {
+    function _sendPayment(uint256 requestId) internal nonReentrant {
         Transaction storage transaction = transactions[msg.sender][requestId];
         wallets[msg.sender].balances[transaction.token] -= transaction.amount;
         IERC20(transaction.token).safeTransfer(transaction.receiver, transaction.amount);
-        transaction.completed = true;
-        emit PaymentSend(transaction.token, msg.sender, transaction.receiver, transaction.amount);
+
+        _cancelRequest(transaction.sender, requestId);
+
+        emit TransactionCompleted(
+            transaction.id,
+            msg.sender,
+            transaction.receiver,
+            transaction.token,
+            transaction.amount,
+            transaction.note,
+            block.timestamp
+        );
+    }
+
+    /**
+     * @notice Internal function removes a transaction request
+     * @param user The address of user to remove transaction
+     * @param requestId The id of transaction for msg.sender
+     */
+    function _cancelRequest(address user, uint256 requestId) internal {
+        for (uint256 i = requestId; i < transactions[user].length - 1; i++) {
+            transactions[user][i] = transactions[user][i + 1];
+        }
+        transactions[user].pop();
     }
 
     /**
@@ -203,7 +241,10 @@ contract Payments is ReentrancyGuard, Ownable {
      * @param _amount The amount to send
      * @param _note The note to describe payment
      */
-    function sendPayment(address _recipient, address _token, uint256 _amount, string memory _note) external {
+    function sendPayment(address _recipient, address _token, uint256 _amount, string memory _note)
+        external
+        whenNotPaused
+    {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (!supportedStablecoins[_token]) revert Payments__UnsupportedStablecoin();
@@ -220,7 +261,10 @@ contract Payments is ReentrancyGuard, Ownable {
      * @param _amount The amount to send
      * @param _note The note to describe payment
      */
-    function requestPayment(address _sender, address _token, uint256 _amount, string memory _note) external {
+    function requestPayment(address _sender, address _token, uint256 _amount, string memory _note)
+        external
+        whenNotPaused
+    {
         if (_token == address(0)) revert Payments__InvalidAddress();
         if (_amount == 0) revert Payments__InvalidAmount();
         if (!supportedStablecoins[_token]) revert Payments__UnsupportedStablecoin();
@@ -232,10 +276,9 @@ contract Payments is ReentrancyGuard, Ownable {
      * @notice Executes the payment and completes the transaction
      * @param requestId The id of transaction for msg.sender
      */
-    function fulfillPayment(uint256 requestId) external {
+    function fulfillPayment(uint256 requestId) external whenNotPaused {
         if (transactions[msg.sender].length <= requestId) revert Payments__InvalidTransactionId();
         Transaction memory transaction = transactions[msg.sender][requestId];
-        if (transaction.completed) revert Payments__TransactionCompleted();
         if (wallets[msg.sender].balances[transaction.token] < transaction.amount) {
             revert Payments__InsufficientBalance();
         }
@@ -258,20 +301,20 @@ contract Payments is ReentrancyGuard, Ownable {
     {
         Transaction[] storage userTransactions = transactions[sender];
         s_transactionCounter++;
+        uint256 timestamp = block.timestamp;
 
         userTransactions.push(
             Transaction({
                 id: s_transactionCounter,
                 token: token,
                 amount: amount,
-                timestamp: block.timestamp,
+                timestamp: timestamp,
                 sender: sender,
                 receiver: to,
-                note: note,
-                completed: false
+                note: note
             })
         );
-        emit TransactionCreated(sender, to, token, amount, note);
+        emit TransactionCreated(s_transactionCounter, sender, to, token, amount, note, timestamp);
     }
 
     function getTransactionHistory(address user) external view returns (Transaction[] memory) {
@@ -304,6 +347,18 @@ contract Payments is ReentrancyGuard, Ownable {
     function addSupportedStablecoin(address _token, address _priceFeed) external onlyOwner {
         supportedStablecoins[_token] = true;
         tokenPriceFeeds[_token] = _priceFeed;
+    }
+
+    function emergencyWithdraw(address _token) external onlyOwner {
+        IERC20(_token).safeTransfer(owner(), IERC20(_token).balanceOf(address(this)));
+    }
+
+    function emergencyPause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     function isStablecoinSupported(address _token) external view returns (bool) {

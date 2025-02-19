@@ -3,6 +3,8 @@
 pragma solidity ^0.8.20;
 
 import {Payments} from "../src/Payments.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {MockERC20} from "../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 import {NetworkConfig} from "../script/NetworkConfig.s.sol";
@@ -21,6 +23,16 @@ contract PaymentsTest is Test {
 
     uint256 public constant DEPOSIT_AMOUNT = 100 ether;
 
+    event Deposited(address token, address user, uint256 amount);
+    event Withdrawn(address token, address user, uint256 amount);
+    event TransactionCreated(
+        uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp
+    );
+    event WalletInitialized(address indexed wallet, address indexed owner);
+    event TransactionCompleted(
+        uint256 id, address sender, address to, address token, uint256 amount, string note, uint256 timestamp
+    );
+
     function encodeTransaction(Payments.Transaction memory transaction) public pure returns (bytes32) {
         return keccak256(
             abi.encode(
@@ -29,8 +41,7 @@ contract PaymentsTest is Test {
                 transaction.receiver,
                 transaction.token,
                 transaction.amount,
-                transaction.note,
-                transaction.completed
+                transaction.note
             )
         );
     }
@@ -66,6 +77,8 @@ contract PaymentsTest is Test {
 
     function testCanInitializeWallet() public {
         vm.prank(user1);
+        vm.expectEmit();
+        emit WalletInitialized(user1, user1);
         payments.initializeWallet(user1);
 
         // Get wallet info
@@ -105,6 +118,8 @@ contract PaymentsTest is Test {
 
         usdc.approve(address(payments), DEPOSIT_AMOUNT);
 
+        vm.expectEmit();
+        emit Deposited(address(usdc), user1, DEPOSIT_AMOUNT);
         payments.deposit(address(usdc), DEPOSIT_AMOUNT);
 
         assertEq(usdc.balanceOf(address(payments)), DEPOSIT_AMOUNT);
@@ -118,6 +133,40 @@ contract PaymentsTest is Test {
 
         vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
         payments.deposit(address(0x2), DEPOSIT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testWithdraw() public {
+        setUpUser1WithDeposit();
+
+        vm.expectEmit();
+        emit Withdrawn(address(usdc), user1, DEPOSIT_AMOUNT);
+        payments.withdraw(address(usdc), DEPOSIT_AMOUNT);
+        assertEq(usdc.balanceOf(address(payments)), 0);
+        assertEq(payments.getBalance(address(usdc)), 0);
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidTokenWithdraw() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAddress.selector);
+        payments.withdraw(address(0x0), DEPOSIT_AMOUNT);
+        vm.stopPrank();
+    }
+
+    function testRevertInvalidAmountWithdraw() public {
+        setUpUser1WithDeposit();
+        vm.expectRevert(Payments.Payments__InvalidAmount.selector);
+        payments.withdraw(address(usdc), 0);
+        vm.stopPrank();
+    }
+
+    function testRevertInsufficentBalanceWithdraw() public {
+        vm.startPrank(user1);
+        payments.initializeWallet(user1);
+
+        vm.expectRevert(Payments.Payments__InsufficientBalance.selector);
+        payments.withdraw(address(usdc), DEPOSIT_AMOUNT);
         vm.stopPrank();
     }
 
@@ -154,30 +203,24 @@ contract PaymentsTest is Test {
     function testSendPayment() public {
         setUpUser1WithDeposit();
 
+        vm.expectEmit();
+        emit TransactionCreated(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
+        emit TransactionCompleted(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.sendPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         assertEq(usdc.balanceOf(address(payments)), 0);
         assertEq(payments.getBalance(address(usdc)), 0);
         assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
-        Payments.Transaction memory expected = Payments.Transaction({
-            id: 1,
-            token: address(usdc),
-            amount: DEPOSIT_AMOUNT,
-            timestamp: block.timestamp,
-            sender: user1,
-            receiver: user2,
-            note: "test",
-            completed: true
-        });
-        vm.startPrank(user1);
-        Payments.Transaction memory result = payments.getTransactionDetails(0);
+
+        // Check transaction history is empty (since payment is completed)
+        assertEq(payments.getTransactionHistory(user1).length, 0);
         vm.stopPrank();
-        assertEq(encodeTransaction(expected), encodeTransaction(result));
     }
 
     function testInvalidTokenRequestPayment() public {
         vm.startPrank(user1);
         vm.expectRevert(Payments.Payments__InvalidAddress.selector);
         payments.requestPayment(user2, address(0x0), DEPOSIT_AMOUNT, "test");
+        assertEq(payments.getTransactionHistory(user2).length, 0);
         vm.stopPrank();
     }
 
@@ -185,6 +228,7 @@ contract PaymentsTest is Test {
         vm.startPrank(user1);
         vm.expectRevert(Payments.Payments__UnsupportedStablecoin.selector);
         payments.requestPayment(user2, address(0x2), DEPOSIT_AMOUNT, "test");
+        assertEq(payments.getTransactionHistory(user2).length, 0);
         vm.stopPrank();
     }
 
@@ -192,12 +236,16 @@ contract PaymentsTest is Test {
         vm.startPrank(user1);
         vm.expectRevert(Payments.Payments__InvalidAmount.selector);
         payments.requestPayment(user2, address(usdc), 0, "test");
+        assertEq(payments.getTransactionHistory(user2).length, 0);
         vm.stopPrank();
     }
 
     function testRequestPayment() public {
         vm.startPrank(user1);
 
+        assertEq(payments.getTransactionHistory(user2).length, 0);
+        vm.expectEmit();
+        emit TransactionCreated(1, user2, user1, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.requestPayment(user2, address(usdc), DEPOSIT_AMOUNT, "test");
         Payments.Transaction memory expected = Payments.Transaction({
             id: 1,
@@ -206,8 +254,7 @@ contract PaymentsTest is Test {
             timestamp: block.timestamp,
             sender: user2,
             receiver: user1,
-            note: "test",
-            completed: false
+            note: "test"
         });
         vm.startPrank(user2);
         Payments.Transaction memory result = payments.getTransactionDetails(0);
@@ -223,23 +270,11 @@ contract PaymentsTest is Test {
         payments.initializeWallet(user2);
 
         payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        assertEq(payments.getTransactionHistory(user1).length, 1);
         vm.startPrank(user1);
         vm.expectRevert(Payments.Payments__InsufficientBalance.selector);
         payments.fulfillPayment(0);
-        vm.stopPrank();
-    }
-
-    function testTransactionCompletedFulfillPayment() public {
-        setUpUser1WithDeposit();
-
-        vm.startPrank(user2);
-        payments.initializeWallet(user2);
-
-        payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
-        vm.startPrank(user1);
-        payments.fulfillPayment(0);
-        vm.expectRevert(Payments.Payments__TransactionCompleted.selector);
-        payments.fulfillPayment(0);
+        assertEq(payments.getTransactionHistory(user1).length, 1);
         vm.stopPrank();
     }
 
@@ -250,9 +285,11 @@ contract PaymentsTest is Test {
         payments.initializeWallet(user2);
 
         payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        assertEq(payments.getTransactionHistory(user1).length, 1);
         vm.startPrank(user1);
         vm.expectRevert(Payments.Payments__InvalidTransactionId.selector);
         payments.fulfillPayment(1);
+        assertEq(payments.getTransactionHistory(user1).length, 1);
         vm.stopPrank();
     }
 
@@ -262,25 +299,47 @@ contract PaymentsTest is Test {
         vm.startPrank(user2);
         payments.initializeWallet(user2);
 
+        vm.expectEmit();
+        emit TransactionCreated(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.requestPayment(user1, address(usdc), DEPOSIT_AMOUNT, "test");
+        assertEq(payments.getTransactionHistory(user1).length, 1);
+
         vm.startPrank(user1);
+        emit TransactionCompleted(1, user1, user2, address(usdc), DEPOSIT_AMOUNT, "test", vm.getBlockTimestamp());
         payments.fulfillPayment(0);
 
+        assertEq(payments.getTransactionHistory(user1).length, 0);
         assertEq(usdc.balanceOf(address(payments)), 0);
         assertEq(payments.getBalance(address(usdc)), 0);
         assertEq(usdc.balanceOf(address(user2)), DEPOSIT_AMOUNT);
-        Payments.Transaction memory expected = Payments.Transaction({
-            id: 1,
-            token: address(usdc),
-            amount: DEPOSIT_AMOUNT,
-            timestamp: block.timestamp,
-            sender: user1,
-            receiver: user2,
-            note: "test",
-            completed: true
-        });
-        Payments.Transaction memory result = payments.getTransactionDetails(0);
-        assertEq(encodeTransaction(expected), encodeTransaction(result));
+        vm.stopPrank();
+    }
+
+    function testEmergencyPause() public {
+        vm.startPrank(user1);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        payments.emergencyPause();
+        vm.startPrank(payments.owner());
+        payments.emergencyPause();
+
+        vm.startPrank(user1);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.initializeWallet(user1);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.deposit(USDC, DEPOSIT_AMOUNT);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.withdraw(USDC, DEPOSIT_AMOUNT);
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.sendPayment(user2, USDC, DEPOSIT_AMOUNT, "test");
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.requestPayment(user2, USDC, DEPOSIT_AMOUNT, "test");
+        vm.expectRevert(Pausable.EnforcedPause.selector);
+        payments.fulfillPayment(0);
+
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, user1));
+        payments.unpause();
+        vm.startPrank(payments.owner());
+        payments.unpause();
         vm.stopPrank();
     }
 
