@@ -6,30 +6,39 @@ import {
   ButtonText,
 } from './button.styles';
 
-export const Button = ({
-  backgroundColor,
-  color,
-  text,
-  border,
+const ButtonContainer = ({
+  backgroundColor = '#00AAFF',
+  color = '#fff',
+  text = 'Register',
   rightIcon,
   leftIcon,
   onPress,
   width,
+  height,paddingHorizontal,
   borderRadius,
+  textTransform,
+  fontSizeVariant,
+  fontWeight
 }) => {
   return (
     <ButtonContainerWrapper
       onPress={onPress ? () => onPress() : null}
       width={width}
-      border={border}
       borderRadius={borderRadius}>
       <ButtonWrapper
+        height={height}
+        paddingHorizontal={paddingHorizontal}
+        width={width ? width : '100%'}
         flexDirection="row"
-        backgroundColor={backgroundColor}
+        style={{backgroundColor}}
         onPress={() => console.log('onPress')}>
         {leftIcon ? leftIcon : null}
         {leftIcon ? <Spacer position="left" size="medium" /> : null}
-        <ButtonText color={color} variant="smallTitle">
+        <ButtonText
+          fontWeight={fontWeight}
+          textTransform={textTransform}
+          color={color}
+          variant={fontSizeVariant ? fontSizeVariant : 'smallBody'}>
           {text}
         </ButtonText>
         {rightIcon ? <Spacer position="right" size="medium" /> : null}
@@ -38,3 +47,4 @@ export const Button = ({
     </ButtonContainerWrapper>
   );
 };
+export default ButtonContainer;

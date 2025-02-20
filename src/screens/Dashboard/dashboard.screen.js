@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker'; // Import the Picker component from the new package
 
+import {LeftArrow, Menu, BottomArrow} from '../../assets/svg/Icons';
 import {SafeArea} from '../../components/utility/safe-area.component';
 import {
   Container,
@@ -52,6 +53,7 @@ import {CardListHeader} from '../../components/cardListHeader/cardListHeader.com
 import {MultiPurposeCard} from '../../components/multiPurposeCard/multiPurposeCard.component';
 import HausaLanguageImage from '../../assets/images/HausaLanguage.png';
 import {ModalComponent} from '../../components/modal/modal.component';
+import HeaderContainer from '../../components/header/index.component';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -438,7 +440,7 @@ const Dashboard = ({navigation}) => {
   return (
     <PageContainer height="100%">
       <ContentContainer>
-        <Header
+        {/* <Header
           navigation={navigation}
           text={null}
           paddingHorizontal
@@ -446,7 +448,8 @@ const Dashboard = ({navigation}) => {
           showModal={showModal}
           selected={selected}
           // svg="previous"
-        />
+        /> */}
+        <HeaderContainer />
         <Spacer size="large" position="top" />
         <ModalWrapper paddingHorizontal homeModal={homeModal}>
           <ModalComponent
@@ -518,114 +521,3 @@ const Dashboard = ({navigation}) => {
 };
 
 export default Dashboard;
-
-// <ScrollViewContainer>
-//   <PageContainer height="100%">
-//     <ContentContainer>
-//       <Header
-//         text={null}
-//         paddingHorizontal
-//         grade={true}
-//         // svg="previous"
-//       />
-//       <Spacer size="large" position="top" />
-//       <Wrapper paddingHorizontal>
-//         <SearchBar sort onPress={() => {}} />
-//       </Wrapper>
-//       <Spacer size="large" position="top" />
-//       <Wrapper style={{paddingStart: 16}}>
-//         <FlatListContainer
-//           data={BannerData}
-//           keyExtractor={item => item.id}
-//           horizontal={true}
-//           paddingEnd={16}
-//           contentContainerStyle={{paddingEnd: 16}}
-//           ItemSeparatorComponent={() => (
-//             <Spacer size="large" position="right" />
-//           )}
-//           renderItem={({item}) => (
-//             <BannerCard
-//               image={item.image}
-//               firstGradientColor={item.firstGradientColor}
-//               secondGradientColor={item.secondGradientColor}
-//               thirdGradientColor={item.thirdGradientColor}
-//               headerText={item.headerText}
-//               discountPercentage={item.discountPercentage}
-//               description={item.description}
-//             />
-//           )}
-//         />
-//       </Wrapper>
-//       <Spacer size="large" position="top" />
-//       <Wrapper paddingHorizontal>
-//         <ButtonContainer
-//         // backgroundColor={}
-//         // color={}
-//         // text={}
-//         // rightIcon={}
-//         // leftIcon={}
-//         // onPress={}
-//         // width={}
-//         // borderRadius={}
-//         />
-//       </Wrapper>
-//       <Spacer size="large" position="top" />
-
-//       <Wrapper>
-//         <CardListHeader title="Subjects" />
-//         <FlatListContainer
-//           data={subjectData}
-//           keyExtractor={item => item.id}
-//           numColumns={2}
-//           columnWrapperStyle={{justifyContent: 'space-between'}}
-//           contentContainerStyle={{
-//             width: '100%',
-//             // padding: 10,
-//           }}
-//           ItemSeparatorComponent={() => (
-//             <Spacer size="large" position="top" />
-//           )}
-//           renderItem={({item}) => (
-//             <MultiPurposeCard
-//               image={item.image}
-//               firstGradientColor={item.firstGradientColor}
-//               secondGradientColor={item.secondGradientColor}
-//               thirdGradientColor={item.thirdGradientColor}
-//               headerText={item.headerText}
-//               discountPercentage={item.discountPercentage}
-//               description={item.description}
-//             />
-//           )}
-//         />
-//       </Wrapper>
-//       <Spacer size="large" position="top" />
-//       <Wrapper>
-//         <CardListHeader title="recommended for you" />
-//         <FlatListContainer
-//           data={subjectData}
-//           keyExtractor={item => item.id}
-//           numColumns={2}
-//           columnWrapperStyle={{justifyContent: 'space-between'}}
-//           contentContainerStyle={{
-//             width: '100%',
-//             // padding: 10,
-//           }}
-//           ItemSeparatorComponent={() => (
-//             <Spacer size="large" position="top" />
-//           )}
-//           renderItem={({item}) => (
-//             <MultiPurposeCard
-//               image={item.image}
-//               firstGradientColor={item.firstGradientColor}
-//               secondGradientColor={item.secondGradientColor}
-//               thirdGradientColor={item.thirdGradientColor}
-//               headerText={item.headerText}
-//               discountPercentage={item.discountPercentage}
-//               description={item.description}
-//             />
-//           )}
-//         />
-//       </Wrapper>
-//     </ContentContainer>
-//   </PageContainer>
-// </ScrollViewContainer>

@@ -1,20 +1,13 @@
 import React, {useMemo, useEffect, useReducer, useContext} from 'react';
 import {NavigationContainer} from '@react-navigation/native';
-import Dashboard from '../../screens/Dashboard/dashboard.screen';
-
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-
-const Stack = createNativeStackNavigator();
+import {Text, View} from 'react-native';
+// import SplashScreen from "../../features/Authentication/Splash/splash.screen";
+import {MainNavigator} from './main.navigator';
 
 export const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-        }}>
-        <Stack.Screen name="Dashboard" component={Dashboard} />
-      </Stack.Navigator>
+      <MainNavigator />
     </NavigationContainer>
   );
 };
