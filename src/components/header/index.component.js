@@ -6,14 +6,14 @@ import {
   LeftSide,
   RightSide,
 } from "./header.styles";
-import CardImage1 from '../../assets/images/CardImage1.png';
-import {LeftArrow, Menu, BottomArrow} from '../../assets/svg/Icons';
+import CardImage1 from '../../assets/images/Crunchies.png';
+
 
 function HeaderContainer({svg, text = 'Shopping Cart', source = CardImage1}) {
   return (
     <HeaderCover>
       <LeftSide>
-        <LeftArrow />
+       
         <HeaderText>{text}</HeaderText>
       </LeftSide>
       {/* {source && ( */}

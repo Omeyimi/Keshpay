@@ -9,7 +9,7 @@ import {lineHeights} from '../../infrastructure/theme/spacing';
 export const PageContainer = styled(Container)`
   flex: 1;
   /* height: 200px; */
-  background: #fff;
+  background: ${colors.bg.grey};
 `;
 
 export const ContentContainer = styled(Container)`

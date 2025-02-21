@@ -54,6 +54,7 @@ import {MultiPurposeCard} from '../../components/multiPurposeCard/multiPurposeCa
 import HausaLanguageImage from '../../assets/images/HausaLanguage.png';
 import {ModalComponent} from '../../components/modal/modal.component';
 import HeaderContainer from '../../components/header/index.component';
+import { WalletCard } from '../../components/walletCard/walletCard.component';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -438,19 +439,31 @@ const Dashboard = ({navigation}) => {
   };
 
   return (
-    <PageContainer height="100%">
+    <PageContainer height="100%" paddingHorizontalBig>
       <ContentContainer>
-        {/* <Header
+        <Header
           navigation={navigation}
           text={null}
-          paddingHorizontal
           grade={true}
           showModal={showModal}
           selected={selected}
           // svg="previous"
-        /> */}
-        <HeaderContainer />
+        />
+
         <Spacer size="large" position="top" />
+
+        <WalletCard
+          onPress={() => {
+            console.log('Hey');
+          }}
+          balanceVisible={true}
+          walletBalanceWN={'$48,256'}
+          walletBalanceDN={'00'}
+          USDCBalance={'48,256.00'}
+          topic={'English'}
+        />
+        <Spacer size="large" position="top" />
+
         <ModalWrapper paddingHorizontal homeModal={homeModal}>
           <ModalComponent
             homeModal={homeModal}

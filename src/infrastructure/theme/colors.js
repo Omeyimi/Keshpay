@@ -3,10 +3,11 @@ import { DefaultTheme } from "react-native-paper";
 export const colors = {
   //...DefaultTheme.colors,
   primary: '#4eab6b',
-  secondary:"#357549",
+  secondary: '#357549',
 
   bg: {
-    white: '#FFFFFF',
+
+    grey: '#f4f4f5',
     dark: '#0b3410',
   },
   iconColor: '#7F7F7F',
@@ -69,6 +70,6 @@ export const colors = {
     light: '#9fb6e1',
   },
   blue: {
-    strong: '#0018EC',
+    strong: '#2C75C9',
   },
 };

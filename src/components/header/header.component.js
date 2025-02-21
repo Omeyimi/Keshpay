@@ -4,34 +4,54 @@ import {Spacer} from '../spacer/spacer.component';
 import {
   HeaderCover,
   LeftSide,
+  ProfileImageWrapper,
+  VerificationIconStyledWrapper,
+  VerificationIconStyled,
+  ProfileImage,
   MenuIconWrapper,
   HeaderTextWrapper,
   WelcomeText,
-  UserNameText,
-  HeaderText,
-  UserImage,
   RightSide,
-  GradeName,
 } from './header.styles';
-import {LeftArrow, Menu, BottomArrow} from '../../assets/svg/Icons';
+import {
+  LeftArrow,
+  Menu,
+  BottomArrow,
+  UserPlus,
+  MagnifyingGlass,
+} from '../../assets/svg/Icons';
+import ProfileImg from '../../assets/images/profile.png';
+import ButtonContainer from '../button/button.component';
+import IconButton from '../iconButton/iconButton.component';
 
 export const Header = ({
   svg,
   text,
   grade,
   paddingHorizontal,
+  paddingHorizontalBig,
   position,
   showModal,
   selected,
-  navigation
+  navigation,
+  profile = true,
 }) => {
   // const navigation = useNavigation();
   return (
     <HeaderCover
       flexDirection="row"
-      paddingHorizontal={paddingHorizontal}
+      paddingHorizontalBig={paddingHorizontalBig}
       position={position}>
       <LeftSide flexDirection="row" width="auto" justifyContent="flex-start">
+        {profile ? (
+          <ProfileImageWrapper>
+            <VerificationIconStyledWrapper>
+              <VerificationIconStyled />
+            </VerificationIconStyledWrapper>
+
+            <ProfileImage source={ProfileImg} />
+          </ProfileImageWrapper>
+        ) : null}
         {svg == 'menu' ? (
           <MenuIconWrapper
             onPress={() => {
@@ -46,7 +66,7 @@ export const Header = ({
         ) : svg == 'previous' ? (
           <MenuIconWrapper
             onPress={() => {
-              navigation.goBack()
+              navigation.goBack();
             }}>
             <LeftArrow
               onPress={() => {
@@ -56,26 +76,33 @@ export const Header = ({
           </MenuIconWrapper>
         ) : (
           <HeaderTextWrapper>
-            <WelcomeText variant="button">welcome back 👋</WelcomeText>
-            <UserNameText variant="title">leonard victor</UserNameText>
+            <WelcomeText variant="button">Hi, Adeola </WelcomeText>
+            {/* <UserNameText variant="title">leonard victor</UserNameText> */}
           </HeaderTextWrapper>
         )}
       </LeftSide>
 
-      {grade ? (
-        <RightSide
-          onPress={() => {
-            showModal ? showModal() : null;
-            console.log('Clicking!!');
-          }}>
-          <GradeName variant="button">{selected ? selected : 'SS 2'}</GradeName>
-          <BottomArrow
-            onPress={() => {
-              /*navigation.goBack()*/
-            }}
-          />
-        </RightSide>
-      ) : null}
+      <RightSide>
+        <IconButton
+          icon={
+            <UserPlus
+              onPress={() => {
+                /*navigation.goBack()*/
+              }}
+            />
+          }
+        />
+
+        <IconButton
+          icon={
+            <MagnifyingGlass
+              onPress={() => {
+                /*navigation.goBack()*/
+              }}
+            />
+          }
+        />
+      </RightSide>
     </HeaderCover>
   );
 };
