@@ -10,13 +10,14 @@ const IconButton = ({
   activeColor,
   icon,
   size,
-  onPress,
+  onPress,big
 }) => {
   return (
     <IconButtonWrapper
       onPress={onPress ? () => onPress() : null}
       backgroundColor={backgroundColor}
       color={color}
+      big={big}
       activeColor={activeColor}
       size={size ? size : null}>
       {icon ? icon : null}

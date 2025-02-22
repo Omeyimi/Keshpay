@@ -14,7 +14,16 @@ import {
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker'; // Import the Picker component from the new package
 
-import {LeftArrow, Menu, BottomArrow} from '../../assets/svg/Icons';
+import {
+  LeftArrow,
+  Menu,
+  BottomArrow,
+  UserPlus,
+  AddIcon,
+  SendIcon,
+  RequestIcon,
+  WithdrawIcon,
+} from '../../assets/svg/Icons';
 import {SafeArea} from '../../components/utility/safe-area.component';
 import {
   Container,
@@ -29,6 +38,11 @@ import {
   PageContainer,
   ContentContainer,
   Wrapper,
+  IconBtnContainer,
+  IconButtonWrapper,
+  ButtonTitle,
+  EmptyContainer,
+  EmptyText,
   RowContainer,
   ModalWrapper,
   MapInfoContainer,
@@ -44,8 +58,7 @@ import {
 
 import {Spacer} from '../../components/spacer/spacer.component';
 import {SearchBar} from '../../components/searchBar/searchBar.component';
-import ButtonContainer from '../../components/button/button.component';
-import DeliveryManagementCard from '../../components/deliveryManagementCard/index.component';
+
 import {BannerCard} from '../../components/bannerCard/bannerCard.component';
 import Profile from '../../assets/images/profile.png';
 import CardImage1 from '../../assets/images/CardImage1.png';
@@ -54,92 +67,60 @@ import {MultiPurposeCard} from '../../components/multiPurposeCard/multiPurposeCa
 import HausaLanguageImage from '../../assets/images/HausaLanguage.png';
 import {ModalComponent} from '../../components/modal/modal.component';
 import HeaderContainer from '../../components/header/index.component';
-import { WalletCard } from '../../components/walletCard/walletCard.component';
-
+import {WalletCard} from '../../components/walletCard/walletCard.component';
+import IconButton from '../../components/iconButton/iconButton.component';
+import Arrow from 'react-native-vector-icons/Ionicons';
+import {NotificationCard} from '../../components/notificationCard/notification-card.component';
+import RecentTransactionCard from '../../components/recentTransactionCard/recentTransactionCard.component';
+import Icon from 'react-native-vector-icons/Entypo';
+// import {useNavigation} from '@react-navigation/native';
 const windowWidth = Dimensions.get('window').width;
 
 // Dummy data for the sections
-const initialData = [
+const recentTransactionCardData = [
   {
-    title: 'Subjects',
-    data: [
-      {
-        key: 1,
-        image: HausaLanguageImage,
-        firstGradientColor: '#0af',
-        secondGradientColor: '#0af',
-        thirdGradientColor: 'transparent',
-        headerText: 'Hausa Language',
-        discountPercentage: '25%',
-        description:
-          'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-      },
-      {
-        key: 2,
-        image: HausaLanguageImage,
-        firstGradientColor: '#3DAF49',
-        secondGradientColor: '#3DAF49',
-        thirdGradientColor: 'transparent',
-        headerText: 'Hausa Language',
-        discountPercentage: '45%',
-        description:
-          'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-      },
-      {
-        key: 3,
-        image: HausaLanguageImage,
-        firstGradientColor: '#7D29EA',
-        secondGradientColor: '#7D29EA',
-        thirdGradientColor: 'transparent',
-        headerText: 'Hausa Language',
-        discountPercentage: '55%',
-        description:
-          'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-      },
-      {
-        key: 4,
-        image: HausaLanguageImage,
-        firstGradientColor: '#7D29EA',
-        secondGradientColor: '#7D29EA',
-        thirdGradientColor: 'transparent',
-        headerText: 'Hausa Language',
-        discountPercentage: '55%',
-        description:
-          'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-      },
-      // Add more initial items if needed
-    ],
+    id: 1,
+    image: HausaLanguageImage,
+    firstGradientColor: '#0af',
+    secondGradientColor: '#0af',
+    thirdGradientColor: 'transparent',
+    headerText: 'Hausa Language',
+    discountPercentage: '25%',
+    description:
+      'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
   },
   {
-    title: 'recommended for you',
-    data: [
-      {
-        key: 1,
-        image: HausaLanguageImage,
-        subject: 'Englis Language',
-        topic: 'use of Pronouns and grammer',
-      },
-      {
-        key: 2,
-        image: HausaLanguageImage,
-        subject: 'Englis Language',
-        topic: 'use of Pronouns and grammer',
-      },
-      {
-        key: 3,
-        image: HausaLanguageImage,
-        subject: 'Englis Language',
-        topic: 'use of Pronouns and grammer',
-      },
-      {
-        key: 4,
-        image: HausaLanguageImage,
-        subject: 'Englis Language',
-        topic: 'use of Pronouns and grammer',
-      },
-
-      // Add more initial items if needed
-    ],
+    id: 2,
+    image: HausaLanguageImage,
+    firstGradientColor: '#0af',
+    secondGradientColor: '#0af',
+    thirdGradientColor: 'transparent',
+    headerText: 'Hausa Language',
+    discountPercentage: '25%',
+    description:
+      'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
+  },
+  {
+    id: 3,
+    image: HausaLanguageImage,
+    firstGradientColor: '#0af',
+    secondGradientColor: '#0af',
+    thirdGradientColor: 'transparent',
+    headerText: 'Hausa Language',
+    discountPercentage: '25%',
+    description:
+      'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
+  },
+  {
+    id: 4,
+    image: HausaLanguageImage,
+    firstGradientColor: '#0af',
+    secondGradientColor: '#0af',
+    thirdGradientColor: 'transparent',
+    headerText: 'Hausa Language',
+    discountPercentage: '25%',
+    description:
+      'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
   },
 ];
 
@@ -236,6 +217,20 @@ const loadMoreData = [
   // Add more items as needed
 ];
 
+const EmptyState = () => (
+  <EmptyContainer>
+    <Icon
+      name="line-graph"
+      color={colors.blue.strong}
+      size={80}
+      style={styles.emptyIcon}
+    />
+    <EmptyText variant="body" numberOfLines={1}>
+      No data available
+    </EmptyText>
+  </EmptyContainer>
+);
+
 const getUpdatedData = (currentData, additionalData) => {
   return currentData.map(section => {
     if (section.title === 'Subjects') {
@@ -249,101 +244,39 @@ const getUpdatedData = (currentData, additionalData) => {
 };
 
 const Dashboard = ({navigation}) => {
-  const [homeModal, setHomeModal] = useState(false);
-  const [confirmDeliveryModal, setconfirmDeliveryModal] = useState(false);
-  const home = true;
   const showModal = () => setHomeModal(true);
 
   const hideModal = () => setHomeModal(false);
   const [selected, setSelected] = useState();
 
+  // const navigation = useNavigation();
+
   const confirmDelivery = false;
 
-  const BannerData = [
+  const TransactionActions = [
     {
       id: 1,
-      image: CardImage1,
-      firstGradientColor: '#0af',
-      secondGradientColor: '#0af',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '25%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
+      Icon: AddIcon,
+      title: 'Add',
+      backgroundColor: '#1474E1',
     },
+
     {
       id: 2,
-      image: CardImage1,
-      firstGradientColor: '#3DAF49',
-      secondGradientColor: '#3DAF49',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
+      Icon: SendIcon,
+      title: 'Send',
     },
+
     {
       id: 3,
-      image: CardImage1,
-      firstGradientColor: '#7D29EA',
-      secondGradientColor: '#7D29EA',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '55%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
+      Icon: RequestIcon,
+      title: 'Request',
     },
+
     {
       id: 4,
-      image: CardImage1,
-      firstGradientColor: '#7D29EA',
-      secondGradientColor: '#7D29EA',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '55%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-    },
-    {
-      id: 5,
-      image: CardImage1,
-      firstGradientColor: '#0af',
-      secondGradientColor: '#0af',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '25%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-    },
-    {
-      id: 6,
-      image: CardImage1,
-      firstGradientColor: '#3DAF49',
-      secondGradientColor: '#3DAF49',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '45%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-    },
-    {
-      id: 7,
-      image: CardImage1,
-      firstGradientColor: '#7D29EA',
-      secondGradientColor: '#7D29EA',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '55%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
-    },
-    {
-      id: 8,
-      image: CardImage1,
-      firstGradientColor: '#7D29EA',
-      secondGradientColor: '#7D29EA',
-      thirdGradientColor: 'transparent',
-      headerText: 'first time subscription',
-      discountPercentage: '55%',
-      description:
-        'Lorem ipsum dolor sit amet consectetur. Ut pellentesque sit amet',
+      Icon: WithdrawIcon,
+      title: 'Withdraw',
     },
   ];
 
@@ -383,7 +316,6 @@ const Dashboard = ({navigation}) => {
     },
   ];
 
-  const [data, setData] = useState(initialData);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isEndReached = useRef(false);
 
@@ -399,63 +331,17 @@ const Dashboard = ({navigation}) => {
     }
   };
 
-  const Item = ({item, onPress}) => (
-    <MultiPurposeCard
-      image={item.image}
-      onPress={() => {
-        console.log('Hey');
-        navigation.navigate('Courses');
-      }}
-      firstGradientColor={item.firstGradientColor}
-      secondGradientColor={item.secondGradientColor}
-      thirdGradientColor={item.thirdGradientColor}
-      headerText={item.headerText}
-      subject={item.subject}
-      topic={item.topic}
-      discountPercentage={item.discountPercentage}
-      description={item.description}
-    />
-  );
-
   const renderSectionHeader = ({section}) => (
     <CardListHeader title={section.title} />
   );
 
-  const renderItem = ({item}) => {
-    return (
-      <RowContainer>
-        <Item
-          item={item}
-          onPress={() => navigation.navigate('AnotherComponent')}
-        />
-        {item.empty ? null : (
-          <Item
-            item={item}
-            onPress={() => navigation.navigate('AnotherComponent')}
-          />
-        )}
-      </RowContainer>
-    );
-  };
-
   return (
     <PageContainer height="100%" paddingHorizontalBig>
       <ContentContainer>
-        <Header
-          navigation={navigation}
-          text={null}
-          grade={true}
-          showModal={showModal}
-          selected={selected}
-          // svg="previous"
-        />
-
+        <Header navigation={navigation} text={null} />
         <Spacer size="large" position="top" />
-
         <WalletCard
-          onPress={() => {
-            console.log('Hey');
-          }}
+          onPress={() => {}}
           balanceVisible={true}
           walletBalanceWN={'$48,256'}
           walletBalanceDN={'00'}
@@ -463,74 +349,79 @@ const Dashboard = ({navigation}) => {
           topic={'English'}
         />
         <Spacer size="large" position="top" />
-
-        <ModalWrapper paddingHorizontal homeModal={homeModal}>
-          <ModalComponent
-            homeModal={homeModal}
-            hideModal={hideModal}
-            home={true}
-            selected={selected}
-            setSelected={setSelected}
-            confirmDelivery={confirmDelivery}
-          />
-        </ModalWrapper>
-        <PressableContainer onPress={() => navigation.navigate('Search')}>
-          <Wrapper paddingHorizontal pointerEvents="box-only">
-            <SearchBar sort />
-          </Wrapper>
-        </PressableContainer>
         <Spacer size="large" position="top" />
-        <Wrapper style={{paddingStart: 16}}>
+        <IconBtnContainer>
+          {TransactionActions.map(
+            ({Icon, id, title, backgroundColor, iconColor}) => (
+              <IconButtonWrapper key={id}>
+                <IconButton
+                  icon={<Icon />}
+                  backgroundColor={backgroundColor}
+                  iconColor={iconColor}
+                  size={'big'}
+                  onPress={() => {
+                    navigation.navigate('ArrivedDelivery');
+                  }}
+                />
+                <ButtonTitle variant="caption" numberOfLines={1}>
+                  {title}
+                </ButtonTitle>
+              </IconButtonWrapper>
+            ),
+          )}
+        </IconBtnContainer>
+        <Spacer size="large" position="top" />
+
+        <CardListHeader seeAllText={'See all'} title={'Recent transactions'} />
+
+        <Wrapper>
           <FlatListContainer
-            data={BannerData}
+            data={recentTransactionCardData}
             keyExtractor={item => item.id}
-            horizontal={true}
-            paddingEnd={16}
-            contentContainerStyle={{paddingEnd: 16}}
-            ItemSeparatorComponent={() => (
-              <Spacer size="large" position="right" />
-            )}
-            renderItem={({item}) => (
-              <BannerCard
-                image={item.image}
-                onPress={() => {
-                  console.log('Hey');
-                }}
-                firstGradientColor={item.firstGradientColor}
-                secondGradientColor={item.secondGradientColor}
-                thirdGradientColor={item.thirdGradientColor}
-                headerText={item.headerText}
-                discountPercentage={item.discountPercentage}
-                description={item.description}
-              />
-            )}
+            ListEmptyComponent={<EmptyState />}
+            style={{width: '100%'}}
+            contentContainerStyle={{
+              borderRadius: 20,
+              overflow: 'hidden',
+            }}
+            showsVerticalScrollIndicator={false}
+            // ListHeaderComponent={() => (
+            //   <CardListHeader
+            //     seeAllText={'See all'}
+            //     title={'Recent transactions'}
+            //   />
+            // )}
+            renderItem={({item}) => <RecentTransactionCard />}
           />
         </Wrapper>
-        <Spacer size="large" position="top" />
-        <SectionList
-          sections={data}
-          // style={{backgroundColor:"red",paddingHorizontal:"4%"}}
-          keyExtractor={item => item.key}
-          showsVerticalScrollIndicator={false}
-          renderItem={renderItem}
-          renderSectionHeader={renderSectionHeader}
-          onEndReached={handleEndReached}
-          onEndReachedThreshold={0.1}
-          ItemSeparatorComponent={() => (
-            <Spacer size="large" position="right" />
-          )}
-          ListFooterComponent={isLoadingMore && <ActivityIndicator />}
-          stickySectionHeadersEnabled={false}
-          ListHeaderComponent={() => (
-            <Wrapper>
-              <ButtonContainer />
-              <Spacer size="large" position="top" />
-            </Wrapper>
-          )}
-        />
       </ContentContainer>
     </PageContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    width: 100,
+    height: 100,
+    marginBottom: 16,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: 'gray',
+  },
+  contentContainer: {
+    flexGrow: 1, // Ensure the container takes up the full height
+  },
+  item: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+});
 
 export default Dashboard;

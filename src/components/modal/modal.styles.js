@@ -9,7 +9,7 @@ import Icon from "react-native-vector-icons/Ionicons";
 export const ModalContainer = styled(Container)`
   /* max-height: 260; */
   height: auto;
-  background: #fff;
+  background: ${colors.white};
   border-top-left-radius: 17px;
   border-top-right-radius: 17px;
   border-bottom-left-radius: 17px;
@@ -18,21 +18,12 @@ export const ModalContainer = styled(Container)`
 
 export const Wrapper = styled(Container)``;
 
-
 export const ModalTitle = styled(Text)`
-  font-weight: ${fontWeights.bold};
-  color: #000;
+  font-weight: ${fontWeights.semiBold};
+  color: ${colors.primary};
   text-align: center;
-  text-transform: capitalize;
 `;
 
-export const SelectableButtonWrapper = styled(Container)`
-flex-direction:row;
-width:48%;
-/* background-color:red;
-justify-content : space-between ;
-align-items: center; */
-`;
 export const ModalText = styled(Text)`
   font-weight: ${fontWeights.semiBold};
   color: ${colors.black.strong};

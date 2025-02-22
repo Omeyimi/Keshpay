@@ -15,12 +15,43 @@ export const PageContainer = styled(Container)`
 export const ContentContainer = styled(Container)`
   flex: 1;
 `;
+
+export const EmptyContainer = styled(Container)`
+padding-vertical:20px;
+`;
+
+export const EmptyText = styled(Text)`
+  color: ${colors.black.regular};
+  font-weight: ${fontWeights.regular};
+  text-transform: capitalize;
+  text-align: center;
+`;
+
 export const ArrowIcon = styled(Arrow)`
   color: ${colors.primary};
 `;
 export const Wrapper = styled(Container)`
   height: auto;
 `;
+
+export const IconBtnContainer = styled(Container)`
+  flex-direction: row;
+  justify-content: space-around;
+  /* background-color: pink; */
+  align-items: center;
+`;
+export const IconButtonWrapper = styled(Container)`
+  gap: 6px;
+  width: max-content;
+  /* background-color: blue; */
+`;
+
+export const ButtonTitle = styled(Text)`
+  color: ${colors.black.regular};
+  font-weight: ${fontWeights.regular};
+  text-align: center;
+`;
+
 export const RowContainer = styled(Container)`
   height: auto;
   width: auto;

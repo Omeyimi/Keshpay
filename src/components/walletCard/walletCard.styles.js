@@ -30,7 +30,6 @@ export const WalletCardContainer = styled(Container)`
   border-radius: 14px;
   padding-vertical: 20px;
   padding-horizontal: 20px;
-  elevation:3;
 `;
 
 export const LeftSection = styled(Container)`
