@@ -2,6 +2,10 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { getAccessToken, usePrivy } from "@privy-io/react-auth";
 import Head from "next/head";
+import Account from "@/components/graphics/account";
+import TransactionsHistory from "@/components/graphics/transactionsHistory";
+import { Transaction } from "@/types/Transaction";
+import RequestTransaction from "@/components/graphics/requestTransaction";
 
 async function verifyToken() {
   const url = "/api/verify";
@@ -57,14 +61,14 @@ export default function DashboardPage() {
   return (
     <>
       <Head>
-        <title>Privy Auth Demo</title>
+        <title>Keshpay Dashboard</title>
       </Head>
 
       <main className="flex flex-col min-h-screen px-4 sm:px-20 py-6 sm:py-10 bg-privy-light-blue">
         {ready && authenticated ? (
           <>
             <div className="flex flex-row justify-between">
-              <h1 className="text-2xl font-semibold">Privy Auth Demo</h1>
+              <h1 className="text-2xl font-semibold">Keshpay Dashboard</h1>
               <button
                 onClick={logout}
                 className="text-sm bg-violet-200 hover:text-violet-900 py-2 px-4 rounded-md text-violet-700"
@@ -72,6 +76,11 @@ export default function DashboardPage() {
                 Logout
               </button>
             </div>
+            <div className="flex flex-row">
+              <Account wallet="0x12345678" amount={100} />
+              <RequestTransaction transactions={[({id:0, sender:"0x12345678", receiver:"0x5423874", token:"0x11111", amount:5, timestamp:1500, note:"azerty"})]} />
+            </div>
+            <TransactionsHistory transactions={[({id:1, sender:"0x12345678", receiver:"0x654321", token:"0x11111", amount:10, timestamp:1000, note:"test"})]} />
             <div className="mt-12 flex gap-4 flex-wrap">
               {googleSubject ? (
                 <button
