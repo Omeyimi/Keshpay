@@ -12,6 +12,7 @@ export const HeaderCover = styled(Container)`
   width: 100%;
   height: auto;
   padding-vertical: 10px;
+  /* background-color: yellow; */
 `;
 
 export const LeftSide = styled(Container)`
@@ -40,6 +41,26 @@ export const VerificationIconStyledWrapper = styled(Container)`
 `;
 
 export const VerificationIconStyled = styled(VerificationIcon)``;
+
+
+export const InfoSection = styled(Container)`
+  width: max-content;
+  align-items: flex-start;
+  gap: 2px;
+`;
+
+export const Name = styled(Text)`
+  color: #001329;
+  font-weight: ${fontWeights.semiBold};
+  width: max-content;
+`;
+
+export const Title = styled(Text)`
+  color: #a3a3a3;
+  font-weight: ${fontWeights.regular};
+  width: max-content;
+`;
+
 
 export const MenuIconWrapper = styled(PressableContainer)`
   border-radius: 26px;

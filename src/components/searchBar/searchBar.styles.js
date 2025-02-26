@@ -7,15 +7,16 @@ import Icons from 'react-native-vector-icons/Entypo';
 export const SearchBarContainer = styled.TouchableOpacity`
   width: 100%;
   height: 52px;
+  /* background-color:pink; */
 `;
 
 export const SearchBarWrapper = styled(Container)`
   width: 100%;
 `;
 export const StyledSearchbar = styled(Searchbar)`
-  background-color: #f5f5f5;
+  background-color: #f2f4f7;
   elevation: 5;
- width: ${props => (props.sort ? '87%' : '100%')};
+  width: ${props => (props.sort ? '87%' : '100%')};
   border-radius: 12px;
   height: 52px;
 `;

@@ -1,22 +1,13 @@
 import React, {useState} from 'react';
 import {Dimensions} from 'react-native';
 
-import {
-  LeftArrow,
-  Menu,
-  BottomArrow,
-  UserPlus,
-  AddIcon,
-  SendIcon,
-  RequestIcon,
-  WithdrawIcon,
-} from '../../assets/svg/Icons';
+import {RightIcon, MessageIcon} from '../../assets/svg/Icons';
 import {
   Container,
   FlatListContainer,
   PressableContainer,
   ScrollViewContainer,
-} from '../../components/container/container.component';
+} from '../container/container.component';
 
 import {
   CardContainer,
@@ -35,18 +26,26 @@ import {
   IconBtnContainer,
   IconButtonWrapper,
   ButtonTitle,
-} from './recentTransactionCard.styles';
+} from './horizontalCard.styles';
 
-import {Spacer} from '../../components/spacer/spacer.component';
+import {Spacer} from '../spacer/spacer.component';
 import CardImage1 from '../../assets/images/CardImage1.png';
 import ProfileImg from '../../assets/images/profile.png';
 
 const windowWidth = Dimensions.get('window').width;
 
-const RecentTransactionCard = ({profile = true}) => {
+export const HorizontalCard = ({variant, onPress, title, subTitle}) => {
   return (
-    <CardContainer >
-      {profile ? (
+    <CardContainer
+      variant={variant}
+      onPress={() => {
+        onPress();
+      }}>
+      {variant == 'messageBtn' ? (
+        <Wrapper>
+          <MessageIcon />
+        </Wrapper>
+      ) : (
         <ProfileImageWrapper>
           <VerificationIconStyledWrapper>
             <VerificationIconStyled />
@@ -54,30 +53,34 @@ const RecentTransactionCard = ({profile = true}) => {
 
           <ProfileImage source={ProfileImg} />
         </ProfileImageWrapper>
-      ) : null}
+      )}
 
       <ContentContainer>
         <InfoSection>
-          <Name variant="body" numberOfLines={1}>
-            Jason Evans
+          <Name variant={'body'} numberOfLines={1}>
+            {title ? title : 'Jason Evans'}
           </Name>
 
           <TransactionDate variant="caption" numberOfLines={1}>
-            Sent . 16th Feb 2025
+            {subTitle ? subTitle : 'Sent . 16th Feb 2025'}
           </TransactionDate>
         </InfoSection>
-        <StatusWrapper>
-          <Amount variant="body" numberOfLines={1}>
-            - $475
-          </Amount>
+        {variant == 'messageBtn' || 'userCard' ? (
+          <Wrapper>
+            <RightIcon />
+          </Wrapper>
+        ) : (
+          <StatusWrapper>
+            <Amount variant="body" numberOfLines={1}>
+              - $475
+            </Amount>
 
-          <Status variant="caption" numberOfLines={1}>
-            Successful
-          </Status>
-        </StatusWrapper>
+            <Status variant="caption" numberOfLines={1}>
+              Successful
+            </Status>
+          </StatusWrapper>
+        )}
       </ContentContainer>
     </CardContainer>
   );
 };
-
-export default RecentTransactionCard;

@@ -97,7 +97,6 @@ const variants = {
   h5,
   h4,
   h3,
-
   label,
   error,
   hint,

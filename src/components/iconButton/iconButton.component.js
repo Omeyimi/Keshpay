@@ -9,7 +9,7 @@ const IconButton = ({
   color = '#fff',
   activeColor,
   icon,
-  size,
+  size,padding,
   onPress,big
 }) => {
   return (

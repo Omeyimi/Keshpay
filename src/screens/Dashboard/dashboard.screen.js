@@ -1,38 +1,13 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useCallback, useMemo, useRef} from 'react';
+import {View, Text, Image, StyleSheet, Dimensions} from 'react-native';
 import {
-  View,
-  Text,
-  Image,
-  SectionList,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  Pressable,
-  Dimensions,
-  TextInput,
-  TouchableWithoutFeedback,
-} from 'react-native';
-import {Picker} from '@react-native-picker/picker'; // Import the Picker component from the new package
-
-import {
-  LeftArrow,
-  Menu,
-  BottomArrow,
-  UserPlus,
   AddIcon,
   SendIcon,
   RequestIcon,
   WithdrawIcon,
 } from '../../assets/svg/Icons';
-import {SafeArea} from '../../components/utility/safe-area.component';
-import {
-  Container,
-  FlatListContainer,
-  PressableContainer,
-  ScrollViewContainer,
-} from '../../components/container/container.component';
+import {FlatListContainer} from '../../components/container/container.component';
 import {Header} from '../../components/header/header.component';
-import {Ionicons} from '@expo/vector-icons';
 import {colors} from '../../infrastructure/theme/colors';
 import {
   PageContainer,
@@ -43,37 +18,23 @@ import {
   ButtonTitle,
   EmptyContainer,
   EmptyText,
-  RowContainer,
-  ModalWrapper,
-  MapInfoContainer,
-  ContainerHandle,
-  HeaderText,
-  CardText,
-  HorizontalTable,
-  LeftSection,
-  RightSection,
-  BigText,
-  SubText,
 } from './dashboard.styles';
 
 import {Spacer} from '../../components/spacer/spacer.component';
-import {SearchBar} from '../../components/searchBar/searchBar.component';
-
-import {BannerCard} from '../../components/bannerCard/bannerCard.component';
-import Profile from '../../assets/images/profile.png';
 import CardImage1 from '../../assets/images/CardImage1.png';
 import {CardListHeader} from '../../components/cardListHeader/cardListHeader.component';
-import {MultiPurposeCard} from '../../components/multiPurposeCard/multiPurposeCard.component';
+
 import HausaLanguageImage from '../../assets/images/HausaLanguage.png';
 import {ModalComponent} from '../../components/modal/modal.component';
-import HeaderContainer from '../../components/header/index.component';
 import {WalletCard} from '../../components/walletCard/walletCard.component';
 import IconButton from '../../components/iconButton/iconButton.component';
-import Arrow from 'react-native-vector-icons/Ionicons';
-import {NotificationCard} from '../../components/notificationCard/notification-card.component';
-import RecentTransactionCard from '../../components/recentTransactionCard/recentTransactionCard.component';
+
+import {HorizontalCard} from '../../components/horizontalCard/horizontalCard.component';
 import Icon from 'react-native-vector-icons/Entypo';
-// import {useNavigation} from '@react-navigation/native';
+
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
+
 const windowWidth = Dimensions.get('window').width;
 
 // Dummy data for the sections
@@ -249,6 +210,14 @@ const Dashboard = ({navigation}) => {
   const hideModal = () => setHomeModal(false);
   const [selected, setSelected] = useState();
 
+  // ref
+  const bottomSheetRef = useRef(null);
+
+  // callbacks
+  const handleSheetChanges = useCallback(index => {
+    console.log('handleSheetChanges', index);
+  }, []);
+
   // const navigation = useNavigation();
 
   const confirmDelivery = false;
@@ -316,6 +285,10 @@ const Dashboard = ({navigation}) => {
     },
   ];
 
+  const snapPoints = useMemo(() => ['25%', '50%', '75%', '85%'], []);
+  const handleCloseBottomSheet = () => bottomSheetRef.current.close();
+  const handleOpenBottomSheet = () => bottomSheetRef.current.expand();
+
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isEndReached = useRef(false);
 
@@ -336,9 +309,9 @@ const Dashboard = ({navigation}) => {
   );
 
   return (
-    <PageContainer height="100%" paddingHorizontalBig>
-      <ContentContainer>
-        <Header navigation={navigation} text={null} />
+    <PageContainer height="100%">
+      <ContentContainer paddingHorizontalBig>
+        <Header navigation={navigation} text={null} profile={true}/>
         <Spacer size="large" position="top" />
         <WalletCard
           onPress={() => {}}
@@ -350,6 +323,7 @@ const Dashboard = ({navigation}) => {
         />
         <Spacer size="large" position="top" />
         <Spacer size="large" position="top" />
+
         <IconBtnContainer>
           {TransactionActions.map(
             ({Icon, id, title, backgroundColor, iconColor}) => (
@@ -359,9 +333,8 @@ const Dashboard = ({navigation}) => {
                   backgroundColor={backgroundColor}
                   iconColor={iconColor}
                   size={'big'}
-                  onPress={() => {
-                    navigation.navigate('ArrivedDelivery');
-                  }}
+                  // onPress={handleOpenBottomSheet}
+                  onPress={() => navigation.navigate('Recent')}
                 />
                 <ButtonTitle variant="caption" numberOfLines={1}>
                   {title}
@@ -391,7 +364,7 @@ const Dashboard = ({navigation}) => {
             //     title={'Recent transactions'}
             //   />
             // )}
-            renderItem={({item}) => <RecentTransactionCard />}
+            renderItem={({item}) => <HorizontalCard />}
           />
         </Wrapper>
       </ContentContainer>
@@ -400,27 +373,20 @@ const Dashboard = ({navigation}) => {
 };
 
 const styles = StyleSheet.create({
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   emptyIcon: {
     width: 100,
     height: 100,
     marginBottom: 16,
   },
-  emptyText: {
-    fontSize: 18,
-    color: 'gray',
+
+  container: {
+    flex: 1,
+    backgroundColor: 'grey',
   },
   contentContainer: {
-    flexGrow: 1, // Ensure the container takes up the full height
-  },
-  item: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    flex: 1,
+    padding: 36,
+    alignItems: 'center',
   },
 });
 

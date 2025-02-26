@@ -8,10 +8,14 @@ import {
   VerificationIconStyledWrapper,
   VerificationIconStyled,
   ProfileImage,
+  InfoSection,
+  Name,
+  Title,
   MenuIconWrapper,
   HeaderTextWrapper,
   WelcomeText,
   RightSide,
+  ContentContainer,
 } from './header.styles';
 import {
   LeftArrow,
@@ -34,24 +38,18 @@ export const Header = ({
   showModal,
   selected,
   navigation,
-  profile = true,
+  profile,
+  userHeader,
+  title,
+  name,
 }) => {
   // const navigation = useNavigation();
   return (
     <HeaderCover
       flexDirection="row"
-      paddingHorizontalBig={paddingHorizontalBig}
+      paddingHorizontalBig={paddingHorizontalBig ? '4%' : null}
       position={position}>
       <LeftSide flexDirection="row" width="auto" justifyContent="flex-start">
-        {profile ? (
-          <ProfileImageWrapper>
-            <VerificationIconStyledWrapper>
-              <VerificationIconStyled />
-            </VerificationIconStyledWrapper>
-
-            <ProfileImage source={ProfileImg} />
-          </ProfileImageWrapper>
-        ) : null}
         {svg == 'menu' ? (
           <MenuIconWrapper
             onPress={() => {
@@ -80,28 +78,45 @@ export const Header = ({
             {/* <UserNameText variant="title">leonard victor</UserNameText> */}
           </HeaderTextWrapper>
         )}
+
+        {profile || userHeader ? (
+          <ProfileImageWrapper>
+            <VerificationIconStyledWrapper>
+              <VerificationIconStyled />
+            </VerificationIconStyledWrapper>
+
+            <ProfileImage source={ProfileImg} />
+          </ProfileImageWrapper>
+        ) : null}
+
+        {userHeader ? (
+          <InfoSection>
+            <Title variant="caption" numberOfLines={1}>
+              {title ? title : 'Send to'}
+            </Title>
+            <Name variant={'body'} numberOfLines={1}>
+              {name ? name : 'Jason Evans'}
+            </Name>
+          </InfoSection>
+        ) : null}
       </LeftSide>
 
       <RightSide>
-        <IconButton
-          icon={
-            <UserPlus
-              onPress={() => {
-                /*navigation.goBack()*/
-              }}
+        {profile ? (
+          <>
+            <IconButton
+              icon={
+                <UserPlus
+                  onPress={() => {
+                    /*navigation.goBack()*/
+                  }}
+                />
+              }
             />
-          }
-        />
 
-        <IconButton
-          icon={
-            <MagnifyingGlass
-              onPress={() => {
-                /*navigation.goBack()*/
-              }}
-            />
-          }
-        />
+            <IconButton icon={<MagnifyingGlass onPress={() => {}} />} />
+          </>
+        ) : null}
       </RightSide>
     </HeaderCover>
   );
@@ -110,30 +125,3 @@ export const Header = ({
 Header.defaultProps = {
   text: 'Header',
 };
-
-// <HeaderCover
-//   flexDirection="row"
-//   paddingHorizontal={paddingHorizontal}
-//   position={position}>
-//   <LeftSide flexDirection="row" width="auto" justifyContent="flex-start">
-//     {svg == 'menu' ? (
-//       <MenuIconWrapper onPress={() => navigation.toggleDrawer()}>
-//         <Menu onPress={() => navigation.toggleDrawer()} />
-//       </MenuIconWrapper>
-//     ) : svg == 'previous' ? (
-//       <MenuIconWrapper onPress={() => navigation.goBack()}>
-//         <Arrow onPress={() => navigation.goBack()} />
-//       </MenuIconWrapper>
-//     ) : null}
-//     {svg && <Spacer size="medium" position="right" />}
-//     {text ? <HeaderText variant="smallTitle">{text}</HeaderText> : null}
-//   </LeftSide>
-//   {source ? (
-//     <RightSide
-//       onTouchStart={() => {
-//         navigation.navigate('CourierProfile');
-//       }}>
-//       <UserImage source={source} />
-//     </RightSide>
-//   ) : null}
-// </HeaderCover>;

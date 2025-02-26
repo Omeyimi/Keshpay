@@ -1,29 +1,40 @@
 import styled from 'styled-components/native';
-import {
-  Container,
-  PressableContainer,
-} from '../../components/container/container.component';
+import {Container, PressableContainer} from '../container/container.component';
 import Arrow from 'react-native-vector-icons/Ionicons';
 import {colors} from '../../infrastructure/theme/colors';
-import {Text} from '../../components/typography/text.component';
+import {Text} from '../typography/text.component';
 import {fonts, fontWeights} from '../../infrastructure/theme/fonts';
 import {lineHeights} from '../../infrastructure/theme/spacing';
 import {Image} from 'react-native';
 import {VerificationIcon} from '../../assets/svg/Icons';
 
 export const CardContainer = styled(PressableContainer)`
-  padding-vertical: 10px;
-  padding-horizontal: 4%;
-  background: ${colors.white};
+  padding-vertical: ${props =>
+    props.variant == 'messageBtn' ? '15px' : '10px'};
+  padding-horizontal: ${props => (props.variant == 'userCard' ? '0' : '4%')};
+  background: ${props =>
+    props.variant == 'messageBtn'
+      ? colors.bg.grey
+      : props.variant == 'userCard'
+      ? colors.white
+      : colors.white};
   flex-direction: row;
+  align-items: center;
+  border-radius: ${props => (props.variant == 'messageBtn' ? '12px' : 0)};
   justify-content: space-between;
-  gap: 8px;
+  gap: ${props => (props.variant == 'messageBtn' ? '15px' : '8px')};
 `;
 
 export const ProfileImageWrapper = styled(PressableContainer)`
   width: 50;
   height: 50;
   position: relative;
+`;
+
+export const Wrapper = styled(Container)`
+  /* background-color: blue; */
+  width: max-content;
+  height: max-content;
 `;
 
 export const ProfileImage = styled(Image)`

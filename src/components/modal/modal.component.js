@@ -29,7 +29,7 @@ export const ModalComponent = ({
 
   return (
     <Provider>
-      <Portal style={{width: '100%', height: '100%'}}>
+      <Portal style={{width: '100%', height: '100%',backgroundColor:"#000"}}>
         <Modal
           visible={home ? homeModal : confirmDeliveryModal}
           dismissable={false}
